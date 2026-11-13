@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="1024" height="1024">
+  <!-- Icona app: logo su sfondo nero profondo con alone viola -->
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="40%" r="70%"><stop offset="0" stop-color="#2A0B52"/><stop offset="1" stop-color="#07060B"/></radialGradient>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8B2CFF"/><stop offset="1" stop-color="#3A0F6E"/></linearGradient>
+  </defs>
+  <rect width="100" height="100" fill="url(#bg)"/>
+  <g transform="translate(18 18) scale(.64)">
+    <polygon points="88,28 88,72 50,94 12,72 12,28 50,6" fill="url(#g)" stroke="#fff" stroke-opacity=".85" stroke-width="3.5" stroke-linejoin="round"/>
+    <g stroke="#fff" stroke-width="4" stroke-linecap="round"><line x1="50" y1="32" x2="33" y2="62"/><line x1="33" y1="62" x2="67" y2="62"/><line x1="67" y1="62" x2="50" y2="32"/></g>
+    <g fill="#fff"><circle cx="50" cy="32" r="8.5"/><circle cx="33" cy="62" r="8.5"/><circle cx="67" cy="62" r="8.5"/></g>
+    <g fill="#8B2CFF"><circle cx="50" cy="32" r="4.5"/><circle cx="33" cy="62" r="4.5"/><circle cx="67" cy="62" r="4.5"/></g>
+  </g>
+</svg>

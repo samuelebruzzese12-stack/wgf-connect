@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/constants/options.dart';
 import '../../../core/widgets/brand_header.dart';
+import '../../../core/widgets/visuals.dart';
 import '../../authentication/data/auth_repository.dart';
 
-const _interestOptions = [
-  'gaming', 'musica', 'fanart', 'video', 'anime', 'sport', 'cinema', 'eventi',
-];
-const _friendshipOptions = [
-  'amicizia', 'compagni di gioco', 'discussioni', 'incontri della community',
-];
+const _interestOptions = kInterestOptions;
+const _friendshipOptions = kFriendshipOptions;
 
 /// Completa il profilo. L'età viene verificata dal SERVER (complete_onboarding):
 /// questa schermata non decide nulla sulla fascia d'età.
@@ -107,7 +106,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final fmt = DateFormat('dd/MM/yyyy');
-    return Scaffold(
+    return AuroraBackground(
+      child: Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Completa il profilo'),
         actions: [
@@ -147,10 +148,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               DropdownButtonFormField<String>(
                 value: _country,
                 decoration: const InputDecoration(labelText: 'Paese'),
-                items: const [
-                  DropdownMenuItem(value: 'IT', child: Text('Italia')),
-                  DropdownMenuItem(value: 'SM', child: Text('San Marino')),
-                  DropdownMenuItem(value: 'CH', child: Text('Svizzera')),
+                items: [
+                  for (final c in kCountries.entries) DropdownMenuItem(value: c.key, child: Text(c.value)),
                 ],
                 onChanged: (v) => setState(() => _country = v ?? 'IT'),
               ),
@@ -171,8 +170,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               CheckboxListTile(
                 value: _terms,
                 onChanged: (v) => setState(() => _terms = v ?? false),
-                title: const Text('Accetto i Termini di servizio'),
+                title: const Text('Accetto i Termini di servizio e le Linee guida'),
                 controlAffinity: ListTileControlAffinity.leading,
+              ),
+              Wrap(
+                spacing: 4,
+                children: [
+                  TextButton(onPressed: () => context.push('/legal/termini'), child: const Text('Termini')),
+                  TextButton(onPressed: () => context.push('/legal/linee-guida'), child: const Text('Linee guida')),
+                  TextButton(onPressed: () => context.push('/legal/privacy'), child: const Text('Privacy')),
+                ],
               ),
               CheckboxListTile(
                 value: _privacy,
@@ -187,10 +194,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 ),
               const SizedBox(height: 12),
               FilledButton(onPressed: _busy ? null : _submit, child: const Text('Entra in WGF CONNECT')),
+              const SizedBox(height: 12),
+              const Text(
+                'WGF CONNECT è riservata ai maggiorenni. Progetto indipendente, non affiliato ai WGF.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12),
+              ),
             ],
           ),
         ),
       ),
+    ),
     );
   }
 }

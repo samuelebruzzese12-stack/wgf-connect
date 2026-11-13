@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>WGF CONNECT – Pannello amministrativo</title>
+<style>
+  :root {
+    --black:#07060B; --surface:#121118; --anth:#1C1B22; --violet:#8B2CFF; --dviolet:#3A0F6E;
+    --white:#F7F5FF; --muted:#9C98AD; --danger:#FF4D6A; --ok:#34D399;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(139,44,255,.25), transparent 60%),
+    radial-gradient(900px 500px at 110% 10%, rgba(58,15,110,.45), transparent 60%), var(--black);
+    background-attachment: fixed; color:var(--white); min-height:100vh; }
+  header { display:flex; align-items:center; gap:12px; padding:16px 24px; border-bottom:1px solid #ffffff14; position:sticky; top:0; background:#07060Bcc; backdrop-filter: blur(10px); z-index:5; }
+  header h1 { font-size:18px; letter-spacing:2px; margin:0; }
+  header .who { margin-left:auto; color:var(--muted); font-size:13px; }
+  .logo { width:34px; height:34px; }
+  nav { display:flex; gap:6px; flex-wrap:wrap; padding:12px 24px; }
+  nav button { background:var(--anth); }
+  nav button.active { background:linear-gradient(135deg,var(--violet),var(--dviolet)); }
+  main { padding:8px 24px 60px; max-width:1200px; margin:auto; }
+  .card { background:#121118e6; border:1px solid #8B2CFF40; border-radius:18px; padding:18px; margin-bottom:14px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px; }
+  .stat .n { font-size:30px; font-weight:800; }
+  .stat .l { color:var(--muted); font-size:13px; }
+  button { border:0; color:var(--white); background:var(--violet); padding:9px 14px; border-radius:12px; cursor:pointer; font-weight:600; font-size:13px; }
+  button.ghost { background:transparent; border:1px solid #8B2CFF80; }
+  button.danger { background:var(--danger); }
+  button.ok { background:#059669; }
+  button:disabled { opacity:.5; cursor:default; }
+  input, select, textarea { width:100%; background:var(--anth); color:var(--white); border:1px solid #ffffff1f; border-radius:12px; padding:10px 12px; font:inherit; }
+  label { display:block; font-size:13px; color:var(--muted); margin:10px 0 4px; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th, td { text-align:left; padding:10px 8px; border-bottom:1px solid #ffffff12; vertical-align:top; }
+  th { color:var(--muted); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:1px; }
+  .tag { display:inline-block; padding:2px 8px; border-radius:20px; background:var(--dviolet); font-size:12px; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .muted { color:var(--muted); }
+  .center { max-width:420px; margin:10vh auto; }
+  #toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--anth); border:1px solid #8B2CFF80; padding:12px 18px; border-radius:14px; opacity:0; transition:opacity .25s; pointer-events:none; }
+  #toast.show { opacity:1; }
+  img.preview { max-width:220px; max-height:220px; border-radius:12px; }
+  .hidden { display:none !important; }
+</style>
+</head>
+<body>
+<header>
+  <svg class="logo" viewBox="0 0 100 100" aria-hidden="true">
+    <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8B2CFF"/><stop offset="1" stop-color="#3A0F6E"/></linearGradient></defs>
+    <polygon points="88,28 88,72 50,94 12,72 12,28 50,6" fill="url(#g)" stroke="#fff" stroke-width="3.5"/>
+    <g stroke="#fff" stroke-width="4" stroke-linecap="round"><line x1="50" y1="32" x2="33" y2="62"/><line x1="33" y1="62" x2="67" y2="62"/><line x1="67" y1="62" x2="50" y2="32"/></g>
+    <g fill="#fff"><circle cx="50" cy="32" r="8.5"/><circle cx="33" cy="62" r="8.5"/><circle cx="67" cy="62" r="8.5"/></g>
+    <g fill="#8B2CFF"><circle cx="50" cy="32" r="4.5"/><circle cx="33" cy="62" r="4.5"/><circle cx="67" cy="62" r="4.5"/></g>
+  </svg>
+  <h1>WGF CONNECT · ADMIN</h1>
+  <span class="who" id="who"></span>
+  <button class="ghost hidden" id="logout">Esci</button>
+</header>
+
+<section id="login" class="center card">
+  <h2 style="margin-top:0">Accesso riservato</h2>
+  <p class="muted">Solo fondatore, amministratori e moderatori. Ogni permesso è verificato dal database.</p>
+  <label>URL progetto Supabase</label><input id="cfgUrl" placeholder="https://xxxx.supabase.co">
+  <label>Anon key (pubblica)</label><input id="cfgKey" placeholder="eyJ...">
+  <label>Email</label><input id="email" type="email" autocomplete="username">
+  <label>Password</label><input id="password" type="password" autocomplete="current-password">
+  <div style="margin-top:16px"><button id="loginBtn">Accedi</button></div>
+  <p class="muted" style="font-size:12px">Non inserire mai qui la service_role key.</p>
+</section>
+
+<nav id="nav" class="hidden"></nav>
+<main id="main" class="hidden"></main>
+<div id="toast"></div>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const $ = (s) => document.querySelector(s);
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const toast = (m) => { const t = $('#toast'); t.textContent = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2600); };
+const when = (d) => d ? new Date(d).toLocaleString('it-IT') : '';
+const ask = (q, min = 3) => { const r = prompt(q); if (r === null) return null; if (r.trim().length < min) { toast(`Motivazione obbligatoria (min ${min} caratteri)`); return null; } return r.trim(); };
+
+let sb = null, me = null;
+$('#cfgUrl').value = localStorage.getItem('wgf_admin_url') || '';
+$('#cfgKey').value = localStorage.getItem('wgf_admin_key') || '';
+
+async function call(fn, params) {
+  const { data, error } = await sb.rpc(fn, params);
+  if (error) { toast('Errore: ' + error.message); throw error; }
+  return data;
+}
+
+$('#loginBtn').onclick = async () => {
+  const url = $('#cfgUrl').value.trim(), key = $('#cfgKey').value.trim();
+  if (!url || !key) return toast('Inserisci URL e anon key');
+  localStorage.setItem('wgf_admin_url', url); localStorage.setItem('wgf_admin_key', key);
+  sb = createClient(url, key);
+  const { error } = await sb.auth.signInWithPassword({ email: $('#email').value.trim(), password: $('#password').value });
+  if (error) return toast('Accesso non riuscito');
+  await boot();
+};
+$('#logout').onclick = async () => { await sb.auth.signOut(); location.reload(); };
+
+async function boot() {
+  const { data: { user } } = await sb.auth.getUser();
+  const { data: prof } = await sb.from('profiles').select('id, username, role, status').eq('id', user.id).maybeSingle();
+  if (!prof || !['admin', 'moderator', 'creator'].includes(prof.role) || prof.status !== 'active') {
+    await sb.auth.signOut();
+    return toast('Questo account non ha permessi amministrativi.');
+  }
+  me = prof;
+  $('#who').textContent = `@${prof.username} · ${prof.role}`;
+  $('#login').classList.add('hidden'); $('#logout').classList.remove('hidden');
+  $('#nav').classList.remove('hidden'); $('#main').classList.remove('hidden');
+  const isStaff = ['admin', 'moderator'].includes(me.role), isAdmin = me.role === 'admin', isCreator = ['creator', 'admin'].includes(me.role);
+  const tabs = [
+    isStaff && ['Panoramica', dashboard],
+    isStaff && ['Segnalazioni', reports],
+    isStaff && ['Eventi', events],
+    isStaff && ['Immagini chat', images],
+    isAdmin && ['Verifiche età', verifications],
+    isStaff && ['Utenti', users],
+    isCreator && ['Sentinel', sentinel],
+    isAdmin && ['Configurazione', config],
+    isStaff && ['Registro', auditLog],
+  ].filter(Boolean);
+  const nav = $('#nav'); nav.innerHTML = '';
+  tabs.forEach(([name, fn], i) => {
+    const b = document.createElement('button'); b.textContent = name;
+    b.onclick = () => { [...nav.children].forEach((x) => x.classList.remove('active')); b.classList.add('active'); fn(); };
+    nav.appendChild(b); if (i === 0) b.click();
+  });
+}
+
+const view = (html) => { $('#main').innerHTML = html; };
+
+// ---------------------------------------------------------------- Panoramica
+async function dashboard() {
+  const s = await call('admin_stats');
+  const items = [
+    ['Utenti totali', s.users_total], ['Utenti attivi', s.users_active], ['Segnalazioni aperte', s.reports_open],
+    ['Eventi da approvare', s.events_pending], ['Immagini da rivedere', s.images_pending],
+    ['Post (7 giorni)', s.posts_7d], ['Match (7 giorni)', s.matches_7d],
+  ];
+  view(`<div class="card"><h2 style="margin-top:0">Panoramica</h2><p class="muted">Solo dati aggregati: nessun dato personale.</p>
+    <div class="grid">${items.map(([l, n]) => `<div class="card stat"><div class="n">${esc(n)}</div><div class="l">${esc(l)}</div></div>`).join('')}</div></div>
+    <div class="card"><h3 style="margin-top:0">Stato dei servizi</h3><div id="health" class="muted">Controllo…</div></div>`);
+  const t0 = performance.now();
+  const { error } = await sb.from('app_config').select('key').limit(1);
+  $('#health').innerHTML = error ? '<span style="color:var(--danger)">Database non raggiungibile</span>'
+    : `Database e API: <b style="color:var(--ok)">operativi</b> · latenza ${Math.round(performance.now() - t0)} ms`;
+}
+
+// ---------------------------------------------------------------- Segnalazioni
+async function reports(status = 'open') {
+  const list = await call('admin_list_reports', { p_status: status });
+  view(`<div class="card"><div class="row"><h2 style="margin:0">Segnalazioni</h2>
+    <select id="rs" style="width:auto;margin-left:auto"><option value="open">Aperte</option><option value="all">Tutte</option></select></div></div>
+    <div class="card"><table><tr><th>Data</th><th>Tipo</th><th>Motivo</th><th>Contenuto</th><th>Azioni</th></tr>
+    ${list.map((r) => `<tr>
+      <td>${when(r.created_at)}<br><span class="muted">da @${esc(r.reporter ?? '—')}</span></td>
+      <td><span class="tag">${esc(r.target_type)}</span><br><span class="tag">${esc(r.status)}</span></td>
+      <td>${esc(r.reason)}<br><span class="muted">${esc(r.details)}</span></td>
+      <td>${esc(r.preview ?? (r.has_evidence ? 'Prova riservata (messaggio)' : '—'))}</td>
+      <td class="row">
+        ${r.has_evidence ? `<button class="ghost" data-a="evidence" data-id="${r.id}">Leggi prova</button>` : ''}
+        ${['post', 'comment', 'support_post', 'support_reply', 'group'].includes(r.target_type) ? `<button class="danger" data-a="hide" data-id="${r.id}" data-t="${r.target_type}" data-tid="${r.target_id}">Nascondi</button>` : ''}
+        ${r.target_type === 'event' ? `<button class="danger" data-a="cancel-event" data-id="${r.id}" data-tid="${r.target_id}">Annulla evento</button>` : ''}
+        ${r.target_type === 'profile' ? `<button class="danger" data-a="suspend" data-id="${r.id}" data-tid="${r.target_id}">Sospendi utente</button>` : ''}
+        <button class="ok" data-a="actioned" data-id="${r.id}">Risolta</button>
+        <button class="ghost" data-a="dismissed" data-id="${r.id}">Archivia</button>
+      </td></tr>`).join('') || '<tr><td colspan="5" class="muted">Nessuna segnalazione.</td></tr>'}</table></div>`);
+  $('#rs').value = status; $('#rs').onchange = (e) => reports(e.target.value);
+  $('#main').querySelectorAll('button[data-a]').forEach((b) => b.onclick = async () => {
+    const { a, id, t, tid } = b.dataset;
+    if (a === 'evidence') {
+      const why = ask('Motivazione dell\'accesso (verrà registrata):', 10); if (!why) return;
+      const ev = await call('admin_read_reported_message', { p_report: id, p_justification: why });
+      alert(ev.evidence ? `Mittente: ${ev.evidence.sender_id}\nData: ${when(ev.evidence.created_at)}\n\n${ev.evidence.body ?? '(immagine)'}` : 'Nessuna prova disponibile.');
+      return;
+    }
+    const why = ask('Motivazione:'); if (!why) return;
+    if (a === 'hide') await call('admin_hide_content', { p_type: t, p_id: tid, p_hidden: true, p_reason: why, p_report: id });
+    if (a === 'cancel-event') await call('admin_review_event', { p_event: tid, p_status: 'cancelled', p_reason: why });
+    if (a === 'suspend') await call('admin_set_user_status', { p_user: tid, p_status: 'suspended', p_reason: why });
+    await call('admin_resolve_report', { p_report: id, p_status: ['actioned', 'dismissed'].includes(a) ? a : 'actioned', p_reason: why });
+    toast('Fatto'); reports(status);
+  });
+}
+
+// ---------------------------------------------------------------- Eventi
+async function events() {
+  const { data } = await sb.from('events').select('*').eq('status', 'pending_review').order('starts_at');
+  view(`<div class="card"><h2 style="margin-top:0">Eventi da approvare</h2>
+    <p class="muted">Controlla che il luogo sia pubblico e che non ci siano indirizzi privati o contenuti inadatti.</p></div>
+    ${(data ?? []).map((e) => `<div class="card"><div class="row"><b>${esc(e.title)}</b><span class="tag">${esc(e.category)}</span><span class="tag">${esc(e.audience_band)}</span></div>
+      <p class="muted">${when(e.starts_at)} · ${esc(e.city)} · ${esc(e.venue_public ?? 'luogo non indicato')} · max ${esc(e.max_participants ?? '∞')}</p>
+      <p>${esc(e.description)}</p>
+      <div class="row"><button class="ok" data-s="published" data-id="${e.id}">Approva e pubblica</button>
+      <button class="danger" data-s="rejected" data-id="${e.id}">Rifiuta</button></div></div>`).join('') || '<div class="card muted">Nessun evento in attesa.</div>'}`);
+  $('#main').querySelectorAll('button[data-s]').forEach((b) => b.onclick = async () => {
+    const why = ask('Motivazione:'); if (!why) return;
+    await call('admin_review_event', { p_event: b.dataset.id, p_status: b.dataset.s, p_reason: why });
+    toast('Evento aggiornato'); events();
+  });
+}
+
+// ---------------------------------------------------------------- Immagini chat
+async function images() {
+  const list = await call('admin_list_pending_images');
+  const urls = await Promise.all(list.map(async (i) => (await sb.storage.from('chat-images').createSignedUrl(i.image_path, 300)).data?.signedUrl));
+  view(`<div class="card"><h2 style="margin-top:0">Immagini in chat da rivedere</h2>
+    <p class="muted">Vedi solo l'immagine, non la conversazione. Il destinatario la riceve solo se approvata.</p></div>
+    <div class="grid">${list.map((i, k) => `<div class="card">${urls[k] ? `<img class="preview" src="${esc(urls[k])}" alt="">` : '<p class="muted">Anteprima non disponibile</p>'}
+      <p class="muted" style="font-size:12px">${when(i.created_at)}</p>
+      <div class="row"><button class="ok" data-s="approved" data-id="${i.message_id}">Approva</button>
+      <button class="danger" data-s="rejected" data-id="${i.message_id}">Rifiuta</button></div></div>`).join('') || '<div class="card muted">Nessuna immagine in attesa.</div>'}</div>`);
+  $('#main').querySelectorAll('button[data-s]').forEach((b) => b.onclick = async () => {
+    const why = b.dataset.s === 'approved' ? 'Immagine conforme' : ask('Motivazione del rifiuto:'); if (!why) return;
+    await call('admin_review_image', { p_message: b.dataset.id, p_status: b.dataset.s, p_reason: why });
+    toast('Fatto'); images();
+  });
+}
+
+// ---------------------------------------------------------------- Verifiche età
+async function verifications() {
+  const list = await call('admin_list_age_verifications');
+  view(`<div class="card"><h2 style="margin-top:0">Verifiche della maggiore età</h2>
+    <p class="muted">Procedura: contatta l'utente, verifica la maggiore età con una breve videochiamata <b>senza registrare</b> e <b>senza conservare copie</b> di documenti. Salva solo l'esito.</p></div>
+    <div class="card"><table><tr><th>Utente</th><th>Richiesta</th><th>Esito</th></tr>
+    ${list.map((v) => `<tr><td>@${esc(v.username)}</td><td>${when(v.created_at)}</td><td class="row">
+      <button class="ok" data-s="verified" data-u="${v.user_id}">Maggiorenne verificato</button>
+      <button class="danger" data-s="rejected" data-u="${v.user_id}">Non verificato</button></td></tr>`).join('') || '<tr><td colspan="3" class="muted">Nessuna richiesta.</td></tr>'}
+    </table></div>`);
+  $('#main').querySelectorAll('button[data-s]').forEach((b) => b.onclick = async () => {
+    const why = ask('Nota sulla procedura (es. "Videochiamata 13/11, nessuna copia conservata"):', 10); if (!why) return;
+    await call('admin_set_age_verification', { p_user: b.dataset.u, p_status: b.dataset.s, p_method: 'manual_review', p_reason: why });
+    toast('Esito salvato'); verifications();
+  });
+}
+
+// ---------------------------------------------------------------- Utenti
+async function users(q = '') {
+  let query = sb.from('profiles').select('id, username, display_name, city, age_band, role, status, created_at').order('created_at', { ascending: false }).limit(50);
+  if (q) query = query.ilike('username', `%${q}%`);
+  const { data } = await query;
+  const roles = me.role === 'admin' ? ['user', 'moderator', 'creator', 'admin'] : null;
+  view(`<div class="card"><div class="row"><h2 style="margin:0">Utenti</h2>
+    <input id="uq" placeholder="Cerca username" style="max-width:260px;margin-left:auto" value="${esc(q)}"></div>
+    <p class="muted">Visibili solo dati del profilo pubblico. Date di nascita e messaggi non sono accessibili.</p></div>
+    <div class="card"><table><tr><th>Utente</th><th>Città</th><th>Fascia</th><th>Ruolo</th><th>Stato</th><th>Azioni</th></tr>
+    ${(data ?? []).map((u) => `<tr><td>@${esc(u.username)}<br><span class="muted">${esc(u.display_name)}</span></td><td>${esc(u.city)}</td>
+      <td><span class="tag">${esc(u.age_band)}</span></td>
+      <td>${roles && u.id !== me.id ? `<select data-role="${u.id}">${roles.map((r) => `<option ${r === u.role ? 'selected' : ''}>${r}</option>`).join('')}</select>` : esc(u.role)}</td>
+      <td><span class="tag">${esc(u.status)}</span></td>
+      <td class="row">${u.id === me.id ? '' : ['active', 'suspended', 'banned'].filter((s) => s !== u.status).map((s) =>
+        `<button class="${s === 'active' ? 'ok' : 'danger'}" data-st="${s}" data-u="${u.id}">${({ active: 'Riattiva', suspended: 'Sospendi', banned: 'Banna' })[s]}</button>`).join('')}</td></tr>`).join('')}
+    </table></div>`);
+  $('#uq').onchange = (e) => users(e.target.value.trim());
+  $('#main').querySelectorAll('button[data-st]').forEach((b) => b.onclick = async () => {
+    const why = ask('Motivazione:'); if (!why) return;
+    await call('admin_set_user_status', { p_user: b.dataset.u, p_status: b.dataset.st, p_reason: why });
+    toast('Stato aggiornato'); users(q);
+  });
+  $('#main').querySelectorAll('select[data-role]').forEach((s) => s.onchange = async () => {
+    const why = ask('Motivazione del cambio ruolo:'); if (!why) return users(q);
+    await call('admin_set_role', { p_user: s.dataset.role, p_role: s.value, p_reason: why });
+    toast('Ruolo aggiornato');
+  });
+}
+
+// ---------------------------------------------------------------- Sentinel
+async function sentinel() {
+  const [{ data: ups }, { data: ideas }] = await Promise.all([
+    sb.from('creator_updates').select('*').order('created_at', { ascending: false }).limit(50),
+    sb.from('creator_ideas').select('*').order('created_at', { ascending: false }).limit(100),
+  ]);
+  const kinds = { update: 'Aggiornamento', devlog: 'Diario di sviluppo', bio: 'Biografia', manifesto: 'Manifesto', future_project: 'Progetto futuro' };
+  view(`<div class="card"><h2 style="margin-top:0">Pubblica come SENTINEL</h2>
+    <label>Tipo</label><select id="uk">${Object.entries(kinds).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select>
+    <label>Titolo</label><input id="ut" maxlength="150">
+    <label>Testo</label><textarea id="ub" rows="8" maxlength="20000"></textarea>
+    <div class="row" style="margin-top:12px"><button id="pub">Pubblica (notifica ai follower)</button><button class="ghost" id="draft">Salva bozza</button></div></div>
+    <div class="card"><h3 style="margin-top:0">Pubblicazioni</h3><table><tr><th>Data</th><th>Tipo</th><th>Titolo</th><th></th></tr>
+    ${(ups ?? []).map((u) => `<tr><td>${when(u.created_at)}</td><td><span class="tag">${esc(kinds[u.kind])}</span></td><td>${esc(u.title)}</td>
+      <td class="row"><button class="ghost" data-pub="${u.id}" data-v="${!u.published}">${u.published ? 'Ritira' : 'Pubblica'}</button>
+      <button class="danger" data-del="${u.id}">Elimina</button></td></tr>`).join('')}</table></div>
+    <div class="card"><h3 style="margin-top:0">Messaggi, idee e volontari dalla community</h3><table><tr><th>Data</th><th>Tipo</th><th>Testo</th><th>Pubblico</th></tr>
+    ${(ideas ?? []).map((i) => `<tr><td>${when(i.created_at)}</td><td><span class="tag">${esc(i.kind)}</span></td><td>${esc(i.body)}</td>
+      <td><input type="checkbox" style="width:auto" data-idea="${i.id}" ${i.is_public ? 'checked' : ''}></td></tr>`).join('')}</table></div>`);
+  const save = async (published) => {
+    const title = $('#ut').value.trim(), body = $('#ub').value.trim();
+    if (!title || !body) return toast('Titolo e testo obbligatori');
+    const { error } = await sb.from('creator_updates').insert({ author_id: me.id, kind: $('#uk').value, title, body, published });
+    if (error) return toast('Errore: ' + error.message);
+    toast(published ? 'Pubblicato!' : 'Bozza salvata'); sentinel();
+  };
+  $('#pub').onclick = () => save(true); $('#draft').onclick = () => save(false);
+  $('#main').querySelectorAll('[data-pub]').forEach((b) => b.onclick = async () => {
+    await sb.from('creator_updates').update({ published: b.dataset.v === 'true' }).eq('id', b.dataset.pub); sentinel();
+  });
+  $('#main').querySelectorAll('[data-del]').forEach((b) => b.onclick = async () => {
+    if (!confirm('Eliminare definitivamente?')) return;
+    await sb.from('creator_updates').delete().eq('id', b.dataset.del); sentinel();
+  });
+  $('#main').querySelectorAll('[data-idea]').forEach((c) => c.onchange = async () => {
+    await sb.from('creator_ideas').update({ is_public: c.checked }).eq('id', c.dataset.idea); toast('Aggiornato');
+  });
+}
+
+// ---------------------------------------------------------------- Configurazione
+async function config() {
+  const { data } = await sb.from('app_config').select('*').order('key');
+  const labels = {
+    dating_enabled: 'Dating attivo (solo adulti verificati)',
+    minors_registration_enabled: 'Registrazione 13–17 (bloccata: richiede revisione legale)',
+    min_registration_age: 'Età minima di registrazione', adult_age: 'Maggiore età',
+  };
+  view(`<div class="card"><h2 style="margin-top:0">Configurazione</h2><table><tr><th>Impostazione</th><th>Valore</th><th></th></tr>
+    ${(data ?? []).map((c) => `<tr><td>${esc(labels[c.key] ?? c.key)}<br><span class="muted">${esc(c.key)}</span></td><td><code>${esc(JSON.stringify(c.value))}</code></td>
+      <td>${typeof c.value === 'boolean' ? `<button class="${c.value ? 'danger' : 'ok'}" data-k="${c.key}" data-v="${!c.value}">${c.value ? 'Disattiva' : 'Attiva'}</button>` : ''}</td></tr>`).join('')}
+    </table></div>`);
+  $('#main').querySelectorAll('button[data-k]').forEach((b) => b.onclick = async () => {
+    const why = ask('Motivazione:'); if (!why) return;
+    await call('admin_set_config', { p_key: b.dataset.k, p_value: b.dataset.v === 'true', p_reason: why });
+    toast('Configurazione aggiornata'); config();
+  });
+}
+
+// ---------------------------------------------------------------- Registro
+async function auditLog() {
+  const [{ data: acts }, { data: access }] = await Promise.all([
+    sb.from('moderation_actions').select('*, profiles!moderation_actions_actor_id_fkey(username)').order('created_at', { ascending: false }).limit(200),
+    me.role === 'admin' ? sb.from('admin_access_log').select('*, profiles!admin_access_log_actor_id_fkey(username)').order('created_at', { ascending: false }).limit(200) : Promise.resolve({ data: null }),
+  ]);
+  view(`<div class="card"><h2 style="margin-top:0">Registro delle azioni amministrative</h2><table><tr><th>Data</th><th>Chi</th><th>Azione</th><th>Oggetto</th><th>Motivazione</th></tr>
+    ${(acts ?? []).map((a) => `<tr><td>${when(a.created_at)}</td><td>@${esc(a.profiles?.username ?? '—')}</td><td>${esc(a.action)}</td><td>${esc(a.target_type)}</td><td>${esc(a.reason)}</td></tr>`).join('')}</table></div>
+    ${access ? `<div class="card"><h3 style="margin-top:0">Accessi a contenuti privati</h3><table><tr><th>Data</th><th>Chi</th><th>Risorsa</th><th>Motivazione</th></tr>
+    ${access.map((a) => `<tr><td>${when(a.created_at)}</td><td>@${esc(a.profiles?.username ?? '—')}</td><td>${esc(a.resource)}</td><td>${esc(a.justification)}</td></tr>`).join('')}</table></div>` : ''}`);
+}
+
+// Sessione già attiva
+const url = localStorage.getItem('wgf_admin_url'), key = localStorage.getItem('wgf_admin_key');
+if (url && key) {
+  sb = createClient(url, key);
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) boot();
+}
+</script>
+</body>
+</html>

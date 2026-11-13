@@ -806,10 +806,7 @@ begin
   if p_status not in ('approved','rejected') then raise exception 'invalid_status' using errcode = 'P0400'; end if;
   update public.messages set image_status = p_status,
          image_path = case when p_status = 'rejected' then null else image_path end
-   where id = p_message and image_path is not null;
-  if p_status = 'rejected' then
-    update public.messages set image_status = null where id = p_message and image_path is null;
-  end if;
+   where id = p_message and image_path is not null and image_status = 'pending';
   perform app_private.log_action('image:' || p_status, 'message', p_message, p_reason);
 end $$;
 

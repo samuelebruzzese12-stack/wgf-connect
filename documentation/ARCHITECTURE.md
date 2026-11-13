@@ -69,6 +69,6 @@ Ogni contenuto generato dagli utenti ha una colonna `audience_band` uguale alla 
 
 ## 5. Limiti dichiarati
 
-- **Verifica dell'età adulta**: richiede un fornitore esterno (di solito a pagamento) o una procedura manuale. Il sistema è pronto (tabella, stati, permessi), ma il dating resta **spento** (`dating_enabled = false`) finché non si sceglie un metodo. Vedi `documentation/LIMITI.md`.
-- **Moderazione automatica delle immagini**: i servizi affidabili sono a pagamento. In v1 le immagini in chat partono come `pending` e diventano visibili dopo l'approvazione o dopo un controllo gratuito da definire.
+- **Verifica dell'età adulta**: procedura manuale gratuita (richiesta in app + verifica admin senza copie di documenti). Il dating si attiva dal pannello. Vedi `documentation/DATING_E_VERIFICA.md`.
+- **Moderazione automatica delle immagini**: i servizi affidabili sono a pagamento. In v1 le immagini in chat partono come `pending` e diventano visibili dopo l'approvazione di un moderatore.
 - **Conformità legale**: la documentazione privacy è una bozza tecnica. Serve la revisione di un professionista prima del lancio.

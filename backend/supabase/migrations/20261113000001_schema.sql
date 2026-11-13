@@ -178,8 +178,8 @@ create table public.messages (
   read_at         timestamptz,
   deleted_at      timestamptz,
   -- Un messaggio eliminato conserva solo i metadati (regola trasparente: vedi PRIVACY.md)
-  check (deleted_at is not null or body is not null or image_path is not null),
-  check ((image_path is null) = (image_status is null))
+  check (deleted_at is not null or body is not null or image_path is not null or image_status = 'rejected'),
+  check (image_path is null or image_status is not null)  -- immagine sempre con stato; 'rejected' senza file
 );
 create index messages_conversation_idx on public.messages (conversation_id, created_at desc);
 

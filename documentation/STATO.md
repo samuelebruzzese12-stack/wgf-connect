@@ -5,44 +5,35 @@ Aggiornato: 13/11/2026
 | Fase | Contenuto | Stato |
 |------|-----------|-------|
 | 1 | Architettura, repository, configurazione | ✅ Completata |
-| 2 | Database, autenticazione lato server, sicurezza | ✅ Completata e **verificata** (130 test superati) |
-| 3 | Design system e navigazione | 🟡 Iniziata: tema, colori, router, barra di navigazione |
-| 4 | Profili e registrazione | 🟡 Iniziata: login, registrazione, recupero password, onboarding |
-| 5–10 | FanFinder/Discover/Match UI, chat e community UI, eventi, Non sei solo, Sentinel, admin, build APK | ⏳ Da fare (il backend di tutte queste sezioni è già pronto) |
+| 2 | Database, autenticazione lato server, sicurezza | ✅ Completata e **verificata** |
+| 3 | Design system, animazioni, navigazione | ✅ Scritta – da compilare (vedi sotto) |
+| 4 | Profili e registrazione | ✅ Scritta – da compilare |
+| 5 | FanFinder, Discover (swipe), Match, Dating con verifica | ✅ Backend verificato · app scritta |
+| 6 | Chat in tempo reale, community, gruppi, sondaggi, fan art | ✅ Backend verificato · app scritta |
+| 7 | Eventi, Non sei solo | ✅ Backend verificato · app scritta |
+| 8 | Pagina THE CREATOR – SENTINEL | ✅ Backend verificato · app scritta |
+| 9 | Pannello amministrativo web | ✅ Scritto, sintassi verificata, schermata di accesso controllata |
+| 10 | Test, ottimizzazione, build APK | 🟡 Test DB eseguiti; build APK da fare sul tuo computer |
 
-## Cosa è stato verificato davvero
+## Verificato davvero in questo ambiente
 
-- Le 4 migrazioni SQL si applicano senza errori su **PostgreSQL 16.15**.
-- `scripts/test_db.sh` esegue **130 test di sicurezza, tutti superati**, come richieste API reali (ruoli `anon` e `authenticated`):
-  utente non autenticato, registrazione e controllo età (under 13, 13–17, 18+), privacy del profilo,
-  separazione per fasce d'età, match e dating, chat, blocco, utente sospeso, community, antispam,
-  rate limit, segnalazioni, anonimato in "Non sei solo", eventi, poteri amministrativi e registro accessi,
-  pagina Sentinel, export dati e cancellazione account.
+- **Database**: 5 migrazioni applicate su PostgreSQL 16.15, **167 test di sicurezza superati** eseguendo le richieste come farebbe l'app (ruoli `anon` e `authenticated`): età, separazione minori/adulti, dating solo tra verificati, chat, blocchi, sospensioni, antispam, limiti di frequenza, segnalazioni, anonimato, eventi, moderazione immagini, poteri e registro admin, Sentinel, export e cancellazione dati.
+- I test hanno trovato e permesso di correggere 1 errore reale (il rifiuto di un'immagine in chat violava un vincolo del database).
+- **Collegamento app ↔ database**: tutte le 24 chiamate RPC dell'app controllate contro le funzioni reali del database (nomi e parametri).
+- **Codice Flutter**: controllo strutturale automatico su 42 file (parentesi, import, classi e provider referenziati) senza errori.
+- **Pannello admin**: JavaScript validato con Node, pagina di accesso renderizzata in Chrome.
+- **Logo e icona**: SVG originali convertiti in PNG 1024×1024.
 
-## Cosa NON è stato ancora verificato
+## NON ancora verificato
 
-- **Codice Flutter**: scritto ma **non compilato** in questo ambiente (Flutter SDK non disponibile).
-  Va verificato con `flutter analyze` e `flutter test` (lo fa anche la CI su GitHub).
-  Le versioni dei pacchetti in `pubspec.yaml` potrebbero richiedere `flutter pub upgrade`.
-- **Migrazione 0004 (Storage e Realtime)**: sul PostgreSQL locale viene saltata perché gli schemi di Supabase non esistono; va verificata sul progetto Supabase reale.
-- Lo shim di Supabase Auth usato nei test è minimo: replica `auth.uid()`, i ruoli e i permessi predefiniti, non tutto Supabase.
+- **Compilazione Flutter**: il Flutter SDK non è disponibile qui. Va eseguito sul tuo computer:
+  `flutter pub get && flutter analyze && flutter test` (lo fa anche GitHub Actions a ogni push).
+  È possibile che servano piccole correzioni (versioni dei pacchetti o API cambiate).
+- **Migrazioni 0004–0005 su Supabase reale**: le parti di Storage e Realtime funzionano solo lì.
+- **Notifiche push (FCM)**: le notifiche funzionano dentro l'app in tempo reale; le push a telefono chiuso richiedono un progetto Firebase e una Edge Function (prossimo passo).
+- **APK**: da generare con `flutter build apk` (guida in `PUBBLICAZIONE_ANDROID.md`).
 
-## File completati
+## Scelte da sapere
 
-```
-backend/supabase/migrations/20261113000001_schema.sql            31 tabelle, vincoli, indici
-backend/supabase/migrations/20261113000002_functions.sql         helper, trigger, 26 RPC (utente + admin)
-backend/supabase/migrations/20261113000003_rls.sql               RLS forzata su tutte le tabelle, policy
-backend/supabase/migrations/20261113000004_storage_realtime.sql  bucket privati, policy storage, realtime
-backend/supabase/seed/seed_test_data.sql                         utenti fittizi test_*
-backend/supabase/tests/00_supabase_shim.sql                      shim per test locali
-backend/supabase/tests/10_security_tests.sql                     130 test
-mobile/lib/…                                                     config, tema, router, auth, onboarding, home
-mobile/test/friendly_error_test.dart
-scripts/test_db.sh, .github/workflows/ci.yml
-documentation/ARCHITECTURE.md, INSTALLAZIONE.md, LIMITI.md, STATO.md
-```
-
-## Prossimo passo
-
-Fase 3 completa (splash animata, componenti riutilizzabili, logo e icona originali) e Fase 4 (schermata profilo e modifica, foto profilo, impostazioni privacy).
+- **Animazioni**: realizzate con il motore di Flutter (CustomPainter e controller), non con Rive. Rive richiede file `.riv` disegnati nel suo editor; quelle di Flutter sono più leggere e non hanno bisogno di file esterni. Si possono aggiungere animazioni Rive in futuro.
+- **WGF**: l'app ha sezioni, hashtag, gruppi e campi profilo dedicati ai WGF (personaggi preferiti, feed #WGF, gruppi WGF), ma **nessun logo, foto o contenuto ufficiale**: servirebbe l'autorizzazione dei titolari. Il ritratto di Sentinel si aggiunge mettendo il file `mobile/assets/images/sentinel_portrait.png`.

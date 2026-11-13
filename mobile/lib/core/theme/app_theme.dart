@@ -62,9 +62,44 @@ abstract final class AppTheme {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
       ),
-      navigationBarTheme: const NavigationBarThemeData(
-        backgroundColor: WgfColors.surface,
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: WgfColors.surface.withValues(alpha: 0.96),
         indicatorColor: WgfColors.darkViolet,
+        height: 68,
+        labelTextStyle: WidgetStateProperty.all(const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: WgfColors.black,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+      ),
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        backgroundColor: WgfColors.electricViolet,
+        foregroundColor: WgfColors.white,
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: WgfColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      ),
+      snackBarTheme: const SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: WgfColors.anthracite,
+        contentTextStyle: TextStyle(color: WgfColors.white),
+      ),
+      chipTheme: const ChipThemeData(
+        backgroundColor: WgfColors.anthracite,
+        selectedColor: WgfColors.darkViolet,
+        side: BorderSide.none,
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: WgfColors.white,
+          side: const BorderSide(color: WgfColors.electricViolet),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          minimumSize: const Size(0, 48),
+        ),
       ),
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {TargetPlatform.android: ZoomPageTransitionsBuilder()},

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="1024" height="1024">
+  <!-- Logo originale WGF CONNECT: esagono con tre fan (nodi) collegati. Nessun elemento di terzi. -->
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8B2CFF"/><stop offset="1" stop-color="#3A0F6E"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="4"/></filter>
+  </defs>
+  <polygon points="88,28 88,72 50,94 12,72 12,28 50,6" fill="#8B2CFF" opacity=".6" filter="url(#glow)"/>
+  <polygon points="88,28 88,72 50,94 12,72 12,28 50,6" fill="url(#g)" stroke="#fff" stroke-opacity=".85" stroke-width="3.5" stroke-linejoin="round"/>
+  <g stroke="#fff" stroke-width="4" stroke-linecap="round">
+    <line x1="50" y1="32" x2="33" y2="62"/><line x1="33" y1="62" x2="67" y2="62"/><line x1="67" y1="62" x2="50" y2="32"/>
+  </g>
+  <g fill="#fff"><circle cx="50" cy="32" r="8.5"/><circle cx="33" cy="62" r="8.5"/><circle cx="67" cy="62" r="8.5"/></g>
+  <g fill="#8B2CFF"><circle cx="50" cy="32" r="4.5"/><circle cx="33" cy="62" r="4.5"/><circle cx="67" cy="62" r="4.5"/></g>
+</svg>

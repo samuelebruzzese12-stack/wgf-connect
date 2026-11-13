@@ -14,11 +14,25 @@ dependencies:
   go_router: ^14.2.0
   google_fonts: ^6.2.1
   intl: ^0.19.0
+  image_picker: ^1.1.2
+  url_launcher: ^6.3.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.14.1
+
+# Genera le icone Android: dart run flutter_launcher_icons
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/images/app_icon.png"
+  adaptive_icon_background: "#07060B"
+  adaptive_icon_foreground: "assets/images/logo.png"
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/legal/

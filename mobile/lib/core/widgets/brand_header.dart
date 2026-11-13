@@ -1,32 +1,23 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
+import 'visuals.dart';
 
-/// Marchio testuale originale "WGF CONNECT" (nessun logo di terzi).
+/// Marchio originale "WGF CONNECT" (nessun logo di terzi).
 class BrandHeader extends StatelessWidget {
-  const BrandHeader({super.key, this.subtitle});
+  const BrandHeader({super.key, this.subtitle, this.logoSize = 76});
   final String? subtitle;
+  final double logoSize;
 
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
     return Column(
       children: [
-        Container(
-          width: 72,
-          height: 72,
-          decoration: BoxDecoration(
-            gradient: WgfColors.brandGradient,
-            borderRadius: BorderRadius.circular(22),
-            boxShadow: [
-              BoxShadow(color: WgfColors.electricViolet.withValues(alpha: 0.45), blurRadius: 28),
-            ],
-          ),
-          child: const Icon(Icons.hub_rounded, size: 38, color: WgfColors.white),
-        ),
+        Hero(tag: 'wgf-logo', child: WgfLogo(size: logoSize)),
         const SizedBox(height: 16),
         ShaderMask(
-          shaderCallback: (r) => WgfColors.brandGradient.createShader(r),
+          shaderCallback: (r) => const LinearGradient(colors: [Colors.white, Color(0xFFC9A7FF)]).createShader(r),
           child: Text('WGF CONNECT', style: t.headlineLarge?.copyWith(color: Colors.white)),
         ),
         if (subtitle != null) ...[

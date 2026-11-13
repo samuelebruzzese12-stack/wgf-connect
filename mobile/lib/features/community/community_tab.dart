@@ -1,0 +1,102 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../core/theme/app_theme.dart';
+import '../../core/widgets/visuals.dart';
+import '../../data/repositories/repositories.dart';
+import 'compose_post_screen.dart';
+import 'post_card.dart';
+
+/// Home della community: feed personalizzabile per sezione.
+class CommunityTab extends ConsumerStatefulWidget {
+  const CommunityTab({super.key});
+  @override
+  ConsumerState<CommunityTab> createState() => _CommunityTabState();
+}
+
+class _CommunityTabState extends ConsumerState<CommunityTab> {
+  static const _sections = <(String, String?, IconData)>[
+    ('Per te', null, Icons.auto_awesome_rounded),
+    ('WGF', 'wgf', Icons.bolt_rounded),
+    ('Gaming', 'gaming', Icons.sports_esports_rounded),
+    ('Fan art', 'fanart', Icons.brush_rounded),
+    ('Discussioni', 'discussione', Icons.forum_rounded),
+  ];
+  int _section = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final q = FeedQuery(hashtag: _sections[_section].$2);
+    final feed = ref.watch(feedProvider(q));
+    return Column(
+      children: [
+        SizedBox(
+          height: 52,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            itemCount: _sections.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemBuilder: (_, i) {
+              final selected = i == _section;
+              return GestureDetector(
+                onTap: () => setState(() => _section = i),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOut,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: BoxDecoration(
+                    gradient: selected ? WgfColors.brandGradient : null,
+                    color: selected ? null : WgfColors.anthracite,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(_sections[i].$3, size: 16),
+                      const SizedBox(width: 6),
+                      Text(_sections[i].$1, style: TextStyle(fontWeight: selected ? FontWeight.w700 : FontWeight.w500)),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: () => ref.refresh(feedProvider(q).future),
+            child: asyncView(
+              feed,
+              (posts) => posts.isEmpty
+                  ? ListView(
+                      children: [
+                        const SizedBox(height: 60),
+                        EmptyState(
+                          icon: Icons.dynamic_feed_rounded,
+                          title: 'Ancora nessun post qui',
+                          message: 'Rompi il ghiaccio: scrivi il primo!',
+                          action: FilledButton(
+                            onPressed: () => context.push(
+                              '/compose',
+                              extra: ComposeOptions(hashtag: _sections[_section].$2),
+                            ),
+                            child: const Text('Scrivi un post'),
+                          ),
+                        ),
+                      ],
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(12, 4, 12, 96),
+                      itemCount: posts.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (_, i) => FadeSlideIn(index: i, child: PostCard(post: posts[i])),
+                    ),
+              onRetry: () => ref.invalidate(feedProvider(q)),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
