@@ -1,8 +1,4 @@
--- ============================================================
--- WGF CONNECT – SETUP COMPLETO DEL DATABASE (un solo file)
--- Incolla tutto nello SQL Editor di Supabase e premi RUN.
--- Da eseguire UNA SOLA VOLTA su un progetto nuovo.
--- ============================================================
+-- WGF CONNECT – SETUP COMPLETO DEL DATABASE (un solo file). Incolla nello SQL Editor di Supabase e premi RUN, una sola volta su un progetto nuovo.
 
 -- >>> 20261113000001_schema.sql
 -- =====================================================================
@@ -2019,3 +2015,10 @@ begin
 end $$;
 revoke execute on function public.admin_set_config_text(text, text, text) from public, anon;
 grant execute on function public.admin_set_config_text(text, text, text) to authenticated;
+
+-- >>> 20261113000007_fix_search_path.sql
+-- WGF CONNECT – Migrazione 0007: search_path fisso sulle funzioni trigger (avviso del linter Supabase)
+alter function app_private.protect_profile_columns() set search_path = '';
+alter function app_private.set_updated_at() set search_path = '';
+alter function app_private.protect_content_columns() set search_path = '';
+alter function app_private.normalize_hashtags() set search_path = '';

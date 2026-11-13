@@ -7,6 +7,14 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Indirizzo e chiave PUBBLICA (anon) del progetto Supabase.
+# La chiave anon è pubblica per design: la sicurezza è garantita dalle regole RLS del database.
+# Se crei i segreti SUPABASE_URL / SUPABASE_ANON_KEY nel repository, hanno la precedenza.
+# NON inserire mai qui la service_role key.
+env:
+  DEFAULT_SUPABASE_URL: https://diblnbkzovzbtqwvovse.supabase.co
+  DEFAULT_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpYmxuYmt6b3Z6YnRxd3ZvdnNlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ1ODE4NDgsImV4cCI6MjExMDE1Nzg0OH0.3-yjce0q728adSiNEpkebLtVCBPD-azWZVvzum5qwNQ
+
 jobs:
   apk:
     runs-on: ubuntu-latest
@@ -25,16 +33,6 @@ jobs:
         with:
           channel: stable
           cache: true
-
-      - name: Controllo segreti
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-        run: |
-          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
-            echo "::error::Aggiungi i segreti SUPABASE_URL e SUPABASE_ANON_KEY (Settings → Secrets and variables → Actions)"
-            exit 1
-          fi
 
       - name: Genera la parte Android
         run: |
@@ -57,8 +55,8 @@ jobs:
 
       - name: Build APK
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL || env.DEFAULT_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || env.DEFAULT_SUPABASE_ANON_KEY }}
         run: |
           flutter build apk --release --split-per-abi \
             --dart-define=SUPABASE_URL="$SUPABASE_URL" \
