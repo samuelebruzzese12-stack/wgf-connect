@@ -613,3 +613,50 @@ final memberNumberProvider = FutureProvider<int>((ref) async {
   ref.watch(currentUserIdProvider);
   return ((await ref.watch(supabaseProvider).rpc('my_member_number')) as num).toInt();
 });
+
+// =====================================================================
+// COMUNICAZIONI UFFICIALI (alert dell'admin)
+// =====================================================================
+/// Cambia ogni volta che viene pubblicato o terminato un avviso (Realtime).
+final announcementsStreamProvider = StreamProvider<List<Map<String, dynamic>>>((ref) {
+  final uid = ref.watch(currentUserIdProvider);
+  if (uid == null) return Stream.value(const []);
+  return ref
+      .watch(supabaseProvider)
+      .from('announcements')
+      .stream(primaryKey: ['id'])
+      .order('created_at', ascending: false)
+      .limit(20);
+});
+
+final announcementsRepoProvider = Provider((ref) => AnnouncementsRepository(ref.watch(supabaseProvider)));
+
+class AnnouncementsRepository {
+  AnnouncementsRepository(this._c);
+  final SupabaseClient _c;
+
+  Future<List<Map<String, dynamic>>> pending() async =>
+      List<Map<String, dynamic>>.from(await _c.rpc('get_pending_announcements') as List);
+
+  Future<void> dismiss(String id) => _c.rpc('dismiss_announcement', params: {'p_id': id});
+
+  Future<Map<String, dynamic>?> byId(String id) =>
+      _c.from('announcements').select().eq('id', id).maybeSingle();
+
+  Future<void> send({
+    required String title,
+    required String body,
+    required String level,
+    required int expiresHours,
+    String? link,
+  }) =>
+      _c.rpc('admin_send_announcement', params: {
+        'p_title': title,
+        'p_body': body,
+        'p_level': level,
+        'p_expires_hours': expiresHours,
+        'p_link': link,
+      });
+
+  Future<void> end(String id) => _c.rpc('admin_end_announcement', params: {'p_id': id});
+}

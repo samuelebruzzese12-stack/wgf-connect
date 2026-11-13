@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../core/theme/app_theme.dart';
 import '../core/widgets/visuals.dart';
 import '../data/repositories/repositories.dart';
+import '../features/announcements/announcements.dart';
 import '../features/chat/conversations_tab.dart';
 import '../features/community/community_tab.dart';
 import '../features/community/compose_post_screen.dart';
@@ -25,6 +26,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   static const _titles = ['Community', 'Discover', 'WGF ZONE', 'Chat', 'Profilo'];
 
   void _openExplore() {
+    final isAdmin = ref.read(myProfileProvider).valueOrNull?.isCreator ?? false;
     showModalBottomSheet(
       context: context,
       showDragHandle: true,
@@ -56,6 +58,8 @@ class _HomeShellState extends ConsumerState<HomeShell> {
               tile(Icons.groups_rounded, 'Gruppi', 'WGF, gaming, fan art e città', '/groups'),
               tile(Icons.favorite_rounded, 'Non sei solo', 'Ascolto e incoraggiamento', '/support'),
               tile(Icons.auto_awesome_rounded, 'The Creator – SENTINEL', 'Il fondatore e il progetto', '/sentinel'),
+              if (isAdmin)
+                tile(Icons.campaign_rounded, 'Comunicazioni ufficiali', 'Invia un avviso a tutta la community', '/admin/announce'),
               tile(Icons.settings_rounded, 'Impostazioni', 'Privacy, notifiche, account', '/settings'),
               const SizedBox(height: 8),
             ],
@@ -90,7 +94,8 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       const MyProfileTab(),
     ];
 
-    return AuroraBackground(
+    return AnnouncementGate(
+      child: AuroraBackground(
       intensity: 0.55,
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -156,6 +161,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
           ],
         ),
       ),
+    ),
     );
   }
 }

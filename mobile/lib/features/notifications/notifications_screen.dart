@@ -8,6 +8,7 @@ import '../../core/widgets/user_avatar.dart';
 import '../../core/widgets/visuals.dart';
 import '../../data/models/models.dart';
 import '../../data/repositories/repositories.dart';
+import '../announcements/announcements.dart';
 
 class NotificationsScreen extends ConsumerWidget {
   const NotificationsScreen({super.key});
@@ -24,12 +25,18 @@ class NotificationsScreen extends ConsumerWidget {
         'creator' => (Icons.auto_awesome_rounded, 'Sentinel: ${n.payload['title'] ?? 'nuovo aggiornamento'}'),
         'friend_request' => (Icons.person_add_rounded, 'Nuova richiesta di amicizia'),
         'moderation' => (Icons.shield_rounded, 'Comunicazione dai moderatori'),
+        'announcement' => (Icons.campaign_rounded, '📢 ${n.payload['title'] ?? 'Comunicazione ufficiale'}'),
         _ => (Icons.notifications_rounded, 'Notifica'),
       };
 
-  void _open(BuildContext context, AppNotification n) {
+  Future<void> _open(BuildContext context, WidgetRef ref, AppNotification n) async {
     final p = n.payload;
     switch (n.kind) {
+      case 'announcement':
+        final id = p['announcement_id'] as String?;
+        if (id == null) return;
+        final a = await ref.read(announcementsRepoProvider).byId(id);
+        if (a != null && context.mounted) await showAnnouncementDialog(context, a);
       case 'match':
       case 'message':
         if (p['conversation_id'] != null) context.push('/chat/${p['conversation_id']}');
@@ -100,7 +107,7 @@ class NotificationsScreen extends ConsumerWidget {
                           subtitle: Text(timeAgo(list[i].createdAt)),
                           onTap: () {
                             ref.read(notificationRepoProvider).markRead(list[i].id);
-                            _open(context, list[i]);
+                            _open(context, ref, list[i]);
                           },
                         ),
                       ),

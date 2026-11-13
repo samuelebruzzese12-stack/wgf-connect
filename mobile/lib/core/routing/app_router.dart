@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/home_shell.dart';
 import '../../data/models/models.dart';
+import '../../features/announcements/announcements.dart';
 import '../../features/authentication/data/auth_repository.dart';
 import '../../features/authentication/presentation/login_screen.dart';
 import '../../features/authentication/presentation/register_screen.dart';
@@ -100,6 +101,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/notifications', pageBuilder: (c, s) => _page(s, const NotificationsScreen())),
       GoRoute(path: '/fanfinder', pageBuilder: (c, s) => _page(s, const FanFinderScreen())),
       GoRoute(path: '/support', pageBuilder: (c, s) => _page(s, const SupportScreen())),
+      GoRoute(path: '/admin/announce', pageBuilder: (c, s) => _page(s, const SendAnnouncementScreen())),
       GoRoute(path: '/wgf', pageBuilder: (c, s) => _page(s, const WgfZoneScreen())),
       GoRoute(path: '/wgf/quiz', pageBuilder: (c, s) => _page(s, const WgfQuizScreen())),
       GoRoute(path: '/events', pageBuilder: (c, s) => _page(s, const EventsScreen())),
