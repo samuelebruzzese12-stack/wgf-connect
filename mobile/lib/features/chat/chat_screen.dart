@@ -12,7 +12,7 @@ import '../../data/repositories/repositories.dart';
 import '../authentication/data/auth_repository.dart';
 import '../moderation/report_sheet.dart';
 
-const _quickEmoji = ['😂', '❤️', '🔥', '👍', '😮', '😢', '🎮', '💜'];
+const _quickEmoji = ['🦁', '😂', '❤️', '🔥', '👍', '😮', '😢', '🎮', '💜'];
 
 /// Chat in tempo reale (Supabase Realtime).
 class ChatScreen extends ConsumerStatefulWidget {

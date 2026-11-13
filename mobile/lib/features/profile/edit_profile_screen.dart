@@ -24,6 +24,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final _interests = <String>{};
   final _friendship = <String>{};
   final _wgf = <String>{};
+  String? _series;
+  int? _fanSince;
   bool _loaded = false;
   bool _busy = false;
 
@@ -35,6 +37,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _city.text = p.city;
     _games.text = p.favoriteGames.join(', ');
     _wgf.addAll(p.favoriteWgfCharacters);
+    _series = p.wgfFavoriteSeries;
+    _fanSince = p.wgfFanSince;
     _interests.addAll(p.interests);
     _friendship.addAll(p.friendshipPreferences);
   }
@@ -56,6 +60,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         'city': _city.text.trim(),
         'favorite_games': splitTags(_games.text),
         'favorite_wgf_characters': _wgf.toList(),
+        'wgf_favorite_series': _series,
+        'wgf_fan_since': _fanSince,
         'interests': _interests.toList(),
         'friendship_preferences': _friendship.toList(),
       });
@@ -103,6 +109,26 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             ),
             const SizedBox(height: 12),
             _chips('Personaggi WGF preferiti', kWgfCharacters, _wgf),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String?>(
+              value: _series,
+              decoration: const InputDecoration(labelText: 'Serie WGF preferita', prefixIcon: Icon(Icons.menu_book_rounded)),
+              items: [
+                const DropdownMenuItem(value: null, child: Text('Nessuna')),
+                for (final st in kWgfStories) DropdownMenuItem(value: st.title, child: Text(st.title)),
+              ],
+              onChanged: (v) => setState(() => _series = v),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<int?>(
+              value: _fanSince,
+              decoration: const InputDecoration(labelText: 'Segui i WGF dal…', prefixIcon: Icon(Icons.history_rounded)),
+              items: [
+                const DropdownMenuItem(value: null, child: Text('Non specificato')),
+                for (var y = DateTime.now().year; y >= 2012; y--) DropdownMenuItem(value: y, child: Text('$y')),
+              ],
+              onChanged: (v) => setState(() => _fanSince = v),
+            ),
             const SizedBox(height: 16),
             TextField(
               controller: _games,

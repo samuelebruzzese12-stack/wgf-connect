@@ -201,6 +201,8 @@ class ProfileDetails extends ConsumerWidget {
           Text(p.bio!, textAlign: TextAlign.center),
         ],
         _section('Personaggi WGF preferiti', p.favoriteWgfCharacters, Icons.bolt_rounded),
+        _section('Serie WGF preferita', [if (p.favoriteSeries != null) p.favoriteSeries!], Icons.menu_book_rounded),
+        _section('Fan WGF dal', [if (p.fanSince != null) '${p.fanSince}'], Icons.history_rounded),
         _section('Videogiochi preferiti', p.favoriteGames, Icons.sports_esports_rounded),
         _section('Interessi', p.interests, Icons.interests_rounded),
         _section('Cerca', p.friendshipPreferences, Icons.handshake_rounded),

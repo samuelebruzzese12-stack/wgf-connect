@@ -597,3 +597,19 @@ final officialContentProvider = FutureProvider<List<Map<String, dynamic>>>((ref)
 
 Future<int> submitWgfQuiz(SupabaseClient c, int correct, int total) async =>
     ((await c.rpc('submit_wgf_quiz', params: {'p_correct': correct, 'p_total': total})) as num).toInt();
+
+/// Ultimi video del canale WhenGamersFail (funzione cloud "wgf-videos").
+final wgfVideosProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  final res = await ref.watch(supabaseProvider).functions.invoke('wgf-videos');
+  final data = res.data;
+  if (data is Map && data['videos'] is List) {
+    return [for (final v in data['videos'] as List) Map<String, dynamic>.from(v as Map)];
+  }
+  return const [];
+});
+
+/// Numero della tessera fan (ordine di iscrizione).
+final memberNumberProvider = FutureProvider<int>((ref) async {
+  ref.watch(currentUserIdProvider);
+  return ((await ref.watch(supabaseProvider).rpc('my_member_number')) as num).toInt();
+});

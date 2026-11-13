@@ -11,6 +11,7 @@ import '../../data/models/models.dart';
 import '../../data/repositories/repositories.dart';
 import '../authentication/data/auth_repository.dart';
 import '../community/post_card.dart';
+import '../wgf/fan_card.dart';
 
 class MyProfileTab extends ConsumerWidget {
   const MyProfileTab({super.key});
@@ -108,6 +109,8 @@ class MyProfileTab extends ConsumerWidget {
                 ],
               ),
             ),
+            const SizedBox(height: 20),
+            FadeSlideIn(index: 1, child: FanCard(profile: p)),
             const SizedBox(height: 20),
             Text('I tuoi post', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),

@@ -31,3 +31,13 @@ select tests.denied('quiz: risposte impossibili rifiutate', $$select public.subm
 select tests.denied('quiz: il punteggio non si modifica a mano', $$update public.profiles set wgf_quiz_score = 100 where id = auth.uid()$$);
 select tests.eq('il badge è visibile nella scheda profilo', $$select public.get_profile(auth.uid()) ->> 'wgf_quiz_score'$$, '80');
 rollback;
+
+\echo '--- 20. Tessera Fan WGF ---'
+begin;
+select tests.login('11111111-1111-1111-1111-111111111111');
+set local role authenticated;
+select tests.ok('salvo "fan dal" e serie preferita', $$update public.profiles set wgf_fan_since = 2016, wgf_favorite_series = 'Le storie del mistero' where id = auth.uid()$$);
+select tests.denied('anno impossibile rifiutato', $$update public.profiles set wgf_fan_since = 1990 where id = auth.uid()$$);
+select tests.eq('numero tessera calcolato', $$select (public.my_member_number() > 0)::text$$, 'true');
+select tests.eq('serie preferita nella scheda profilo', $$select public.get_profile(auth.uid()) ->> 'wgf_favorite_series'$$, 'Le storie del mistero');
+rollback;

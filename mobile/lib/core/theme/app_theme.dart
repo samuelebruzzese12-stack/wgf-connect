@@ -85,8 +85,8 @@ abstract final class AppTheme {
         centerTitle: false,
       ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: WgfColors.electricViolet,
-        foregroundColor: WgfColors.white,
+        backgroundColor: WgfColors.lionGold,
+        foregroundColor: Colors.black,
       ),
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: WgfColors.surface,

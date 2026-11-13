@@ -22,6 +22,8 @@ class ProfileCard {
     this.verifiedAdult = false,
     this.wgfQuizScore = 0,
     this.isFounder = false,
+    this.favoriteSeries,
+    this.fanSince,
   });
 
   final String id;
@@ -39,6 +41,8 @@ class ProfileCard {
   final bool verifiedAdult;
   final int wgfQuizScore;
   final bool isFounder;
+  final String? favoriteSeries;
+  final int? fanSince;
 
   String get name => (displayName?.isNotEmpty ?? false) ? displayName! : username;
 
@@ -58,6 +62,8 @@ class ProfileCard {
         verifiedAdult: (j['verified_adult'] ?? false) as bool,
         wgfQuizScore: _int(j['wgf_quiz_score']),
         isFounder: j['role'] == 'founder',
+        favoriteSeries: j['wgf_favorite_series'] as String?,
+        fanSince: j['wgf_fan_since'] == null ? null : _int(j['wgf_fan_since']),
       );
 }
 
@@ -83,6 +89,9 @@ class MyProfile {
   bool get discoverable => raw['discoverable'] as bool;
   bool get isCreator => role == 'creator' || role == 'admin';
   int get wgfQuizScore => _int(raw['wgf_quiz_score']);
+  int? get wgfFanSince => raw['wgf_fan_since'] == null ? null : _int(raw['wgf_fan_since']);
+  String? get wgfFavoriteSeries => raw['wgf_favorite_series'] as String?;
+  DateTime get createdAt => _date(raw['created_at']);
   bool get isStaff => role == 'admin' || role == 'moderator';
   String get name => (displayName?.isNotEmpty ?? false) ? displayName! : username;
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/constants/wgf.dart';
@@ -10,6 +11,7 @@ import '../../core/widgets/user_avatar.dart';
 import '../../core/widgets/visuals.dart';
 import '../../data/repositories/repositories.dart';
 import '../community/compose_post_screen.dart';
+import 'fan_card.dart';
 
 /// Logo ufficiale WGF fornito dai titolari: mobile/assets/wgf/logo.png
 const kWgfLogoAsset = 'assets/wgf/logo.png';
@@ -48,6 +50,19 @@ class WgfZoneBody extends ConsumerWidget {
         children: [
           FadeSlideIn(child: _Hero(authorized: cfg?.authorized == true)),
           const SizedBox(height: 16),
+          if (me != null) ...[
+            _Title('La tua tessera', Icons.badge_rounded),
+            FadeSlideIn(index: 1, child: FanCard(profile: me)),
+            const Padding(
+              padding: EdgeInsets.only(top: 6),
+              child: Text('Inclinala col dito · tieni premuto per condividerla',
+                  textAlign: TextAlign.center, style: TextStyle(color: WgfColors.muted, fontSize: 12)),
+            ),
+            const SizedBox(height: 18),
+          ],
+          _Title('Ultimi video', Icons.smart_display_rounded),
+          const _LatestVideos(),
+          const SizedBox(height: 22),
 
           // Quiz + badge
           FadeSlideIn(
@@ -438,4 +453,75 @@ class _Title extends StatelessWidget {
           Text(text, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
         ]),
       );
+}
+
+/// Ultimi video del canale (titolo, data, visualizzazioni): si guardano su YouTube.
+class _LatestVideos extends ConsumerWidget {
+  const _LatestVideos();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final videos = ref.watch(wgfVideosProvider);
+    Widget openChannel() => OutlinedButton.icon(
+          onPressed: () => launchUrl(Uri.parse(kWgfLinks.first.url), mode: LaunchMode.externalApplication),
+          icon: const Icon(Icons.smart_display_rounded),
+          label: const Text('Apri il canale su YouTube'),
+        );
+    return videos.when(
+      loading: () => const SizedBox(height: 120, child: Center(child: CircularProgressIndicator())),
+      error: (_, __) => openChannel(),
+      data: (list) {
+        if (list.isEmpty) return openChannel();
+        return SizedBox(
+          height: 150,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: list.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (_, i) {
+              final v = list[i];
+              final published = DateTime.tryParse((v['published'] ?? '') as String)?.toLocal();
+              final views = ((v['views'] ?? 0) as num).toInt();
+              return FadeSlideIn(
+                index: i,
+                child: SizedBox(
+                  width: 230,
+                  child: GlassCard(
+                    padding: const EdgeInsets.all(12),
+                    onTap: () => launchUrl(Uri.parse(v['url'] as String), mode: LaunchMode.externalApplication),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: const BoxDecoration(shape: BoxShape.circle, gradient: WgfColors.lionGradient),
+                            child: const Icon(Icons.play_arrow_rounded, color: Colors.black, size: 18),
+                          ),
+                          const SizedBox(width: 8),
+                          if (i == 0) const TagChip('NUOVO', icon: Icons.fiber_new_rounded),
+                          const Spacer(),
+                          if (published != null)
+                            Text(timeAgo(published), style: const TextStyle(color: WgfColors.muted, fontSize: 12)),
+                        ]),
+                        const SizedBox(height: 10),
+                        Text((v['title'] ?? '') as String,
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontWeight: FontWeight.w700)),
+                        const Spacer(),
+                        if (views > 0)
+                          Text('${NumberFormat.compact(locale: 'it').format(views)} visualizzazioni',
+                              style: const TextStyle(color: WgfColors.muted, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
 }
