@@ -88,9 +88,23 @@ class _CommunityTabState extends ConsumerState<CommunityTab> {
                     )
                   : ListView.separated(
                       padding: const EdgeInsets.fromLTRB(12, 4, 12, 96),
-                      itemCount: posts.length,
+                      itemCount: posts.length + (_section == 1 ? 1 : 0),
                       separatorBuilder: (_, __) => const SizedBox(height: 12),
-                      itemBuilder: (_, i) => FadeSlideIn(index: i, child: PostCard(post: posts[i])),
+                      itemBuilder: (_, i) {
+                        if (_section == 1 && i == 0) {
+                          return GlassCard(
+                            onTap: () => context.push('/wgf'),
+                            child: const Row(children: [
+                              Icon(Icons.bolt_rounded, color: WgfColors.electricViolet),
+                              SizedBox(width: 10),
+                              Expanded(child: Text('Apri la WGF ZONE: foto, notizie e contenuti ufficiali')),
+                              Icon(Icons.chevron_right_rounded),
+                            ]),
+                          );
+                        }
+                        final idx = _section == 1 ? i - 1 : i;
+                        return FadeSlideIn(index: idx, child: PostCard(post: posts[idx]));
+                      },
                     ),
               onRetry: () => ref.invalidate(feedProvider(q)),
             ),

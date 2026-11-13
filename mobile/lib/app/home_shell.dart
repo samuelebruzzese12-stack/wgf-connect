@@ -50,6 +50,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              tile(Icons.bolt_rounded, 'WGF ZONE', 'Foto, notizie e contenuti ufficiali', '/wgf'),
               tile(Icons.travel_explore_rounded, 'FanFinder', 'Cerca fan per città e interessi', '/fanfinder'),
               tile(Icons.groups_rounded, 'Gruppi', 'WGF, gaming, fan art e città', '/groups'),
               tile(Icons.favorite_rounded, 'Non sei solo', 'Ascolto e incoraggiamento', '/support'),

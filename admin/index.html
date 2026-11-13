@@ -126,6 +126,7 @@ async function boot() {
     isAdmin && ['Verifiche età', verifications],
     isStaff && ['Utenti', users],
     isCreator && ['Sentinel', sentinel],
+    isCreator && ['Contenuti WGF', wgfContent],
     isAdmin && ['Configurazione', config],
     isStaff && ['Registro', auditLog],
   ].filter(Boolean);
@@ -313,6 +314,59 @@ async function sentinel() {
   });
 }
 
+// ---------------------------------------------------------------- Contenuti WGF
+async function wgfContent() {
+  const [{ data: items }, { data: cfg }] = await Promise.all([
+    sb.from('official_content').select('*').order('sort_order').order('created_at', { ascending: false }),
+    sb.from('app_config').select('value').eq('key', 'wgf_content_authorized').maybeSingle(),
+  ]);
+  const kinds = { gallery: 'Foto (galleria)', news: 'Notizia', video: 'Video (link)', info: 'Informazione' };
+  const thumbs = await Promise.all((items ?? []).map(async (i) => i.image_path ? (await sb.storage.from('official').createSignedUrl(i.image_path, 300)).data?.signedUrl : null));
+  view(`<div class="card"><h2 style="margin-top:0">Contenuti ufficiali WGF</h2>
+    <p class="muted">Carica solo materiale per cui hai l'<b>autorizzazione scritta</b> dei titolari. Gli utenti lo vedono solo quando
+    "Contenuti ufficiali WGF visibili" è attivo in Configurazione (ora: <b>${cfg?.value === true ? 'ATTIVO' : 'spento'}</b>).</p>
+    <label>Tipo</label><select id="wk">${Object.entries(kinds).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select>
+    <label>Titolo</label><input id="wt" maxlength="150">
+    <label>Testo (facoltativo)</label><textarea id="wb" rows="4" maxlength="10000"></textarea>
+    <label>Immagine (JPG, PNG, WebP – max 10 MB)</label><input id="wf" type="file" accept="image/jpeg,image/png,image/webp">
+    <label>Link https (facoltativo, es. video)</label><input id="wl" placeholder="https://...">
+    <label>Crediti / autorizzazione</label><input id="wc" maxlength="200" placeholder="Foto: © titolare – uso autorizzato">
+    <div class="row" style="margin-top:12px"><button id="wpub">Pubblica</button><button class="ghost" id="wdraft">Salva bozza</button></div></div>
+    <div class="grid">${(items ?? []).map((i, k) => `<div class="card">
+      ${thumbs[k] ? `<img class="preview" src="${esc(thumbs[k])}" alt="">` : ''}
+      <p><span class="tag">${esc(kinds[i.kind] ?? i.kind)}</span> ${i.published ? '<span class="tag">pubblicato</span>' : '<span class="tag">bozza</span>'}</p>
+      <b>${esc(i.title)}</b><p class="muted" style="font-size:12px">${esc(i.credits)}</p>
+      <div class="row"><button class="ghost" data-wp="${i.id}" data-v="${!i.published}">${i.published ? 'Ritira' : 'Pubblica'}</button>
+      <button class="danger" data-wd="${i.id}" data-img="${esc(i.image_path ?? '')}">Elimina</button></div></div>`).join('')}</div>`);
+  const save = async (published) => {
+    const title = $('#wt').value.trim(); if (!title) return toast('Titolo obbligatorio');
+    const link = $('#wl').value.trim(); if (link && !link.startsWith('https://')) return toast('Il link deve iniziare con https://');
+    let image_path = null;
+    const f = $('#wf').files[0];
+    if (f) {
+      if (f.size > 10 * 1024 * 1024) return toast('Immagine troppo grande');
+      image_path = `${Date.now()}_${f.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+      const up = await sb.storage.from('official').upload(image_path, f, { contentType: f.type });
+      if (up.error) return toast('Upload non riuscito: ' + up.error.message);
+    }
+    const { error } = await sb.from('official_content').insert({
+      kind: $('#wk').value, title, body: $('#wb').value.trim() || null, image_path,
+      link_url: link || null, credits: $('#wc').value.trim() || null, published, created_by: me.id,
+    });
+    if (error) return toast('Errore: ' + error.message);
+    toast(published ? 'Pubblicato' : 'Bozza salvata'); wgfContent();
+  };
+  $('#wpub').onclick = () => save(true); $('#wdraft').onclick = () => save(false);
+  $('#main').querySelectorAll('[data-wp]').forEach((b) => b.onclick = async () => {
+    await sb.from('official_content').update({ published: b.dataset.v === 'true' }).eq('id', b.dataset.wp); wgfContent();
+  });
+  $('#main').querySelectorAll('[data-wd]').forEach((b) => b.onclick = async () => {
+    if (!confirm('Eliminare questo contenuto?')) return;
+    if (b.dataset.img) await sb.storage.from('official').remove([b.dataset.img]);
+    await sb.from('official_content').delete().eq('id', b.dataset.wd); wgfContent();
+  });
+}
+
 // ---------------------------------------------------------------- Configurazione
 async function config() {
   const { data } = await sb.from('app_config').select('*').order('key');
@@ -320,11 +374,20 @@ async function config() {
     dating_enabled: 'Dating attivo (solo adulti verificati)',
     minors_registration_enabled: 'Registrazione 13–17 (bloccata: richiede revisione legale)',
     min_registration_age: 'Età minima di registrazione', adult_age: 'Maggiore età',
+    wgf_content_authorized: 'Contenuti ufficiali WGF visibili (attiva solo con autorizzazione scritta dei titolari)',
+    wgf_permission_note: 'Nota di autorizzazione mostrata nella WGF ZONE',
   };
   view(`<div class="card"><h2 style="margin-top:0">Configurazione</h2><table><tr><th>Impostazione</th><th>Valore</th><th></th></tr>
     ${(data ?? []).map((c) => `<tr><td>${esc(labels[c.key] ?? c.key)}<br><span class="muted">${esc(c.key)}</span></td><td><code>${esc(JSON.stringify(c.value))}</code></td>
-      <td>${typeof c.value === 'boolean' ? `<button class="${c.value ? 'danger' : 'ok'}" data-k="${c.key}" data-v="${!c.value}">${c.value ? 'Disattiva' : 'Attiva'}</button>` : ''}</td></tr>`).join('')}
+      <td>${typeof c.value === 'boolean' ? `<button class="${c.value ? 'danger' : 'ok'}" data-k="${c.key}" data-v="${!c.value}">${c.value ? 'Disattiva' : 'Attiva'}</button>`
+        : c.key === 'wgf_permission_note' ? `<button class="ghost" data-text="${c.key}">Modifica</button>` : ''}</td></tr>`).join('')}
     </table></div>`);
+  $('#main').querySelectorAll('button[data-text]').forEach((b) => b.onclick = async () => {
+    const v = prompt('Nuovo testo:'); if (!v) return;
+    const why = ask('Motivazione:'); if (!why) return;
+    await call('admin_set_config_text', { p_key: b.dataset.text, p_value: v.trim(), p_reason: why });
+    toast('Aggiornato'); config();
+  });
   $('#main').querySelectorAll('button[data-k]').forEach((b) => b.onclick = async () => {
     const why = ask('Motivazione:'); if (!why) return;
     await call('admin_set_config', { p_key: b.dataset.k, p_value: b.dataset.v === 'true', p_reason: why });

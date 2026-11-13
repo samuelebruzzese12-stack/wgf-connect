@@ -24,6 +24,7 @@ import '../../features/profile/user_profile_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../features/splash/splash_screen.dart';
 import '../../features/support/support_screen.dart';
+import '../../features/wgf/wgf_zone_screen.dart';
 
 /// Notifica go_router quando cambiano sessione o stato del profilo.
 class _RouterRefresh extends ChangeNotifier {
@@ -97,6 +98,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/notifications', pageBuilder: (c, s) => _page(s, const NotificationsScreen())),
       GoRoute(path: '/fanfinder', pageBuilder: (c, s) => _page(s, const FanFinderScreen())),
       GoRoute(path: '/support', pageBuilder: (c, s) => _page(s, const SupportScreen())),
+      GoRoute(path: '/wgf', pageBuilder: (c, s) => _page(s, const WgfZoneScreen())),
       GoRoute(path: '/sentinel', pageBuilder: (c, s) => _page(s, const SentinelScreen())),
       GoRoute(path: '/verify', pageBuilder: (c, s) => _page(s, const AgeVerificationScreen())),
       GoRoute(path: '/events/new', pageBuilder: (c, s) => _page(s, const CreateEventScreen())),

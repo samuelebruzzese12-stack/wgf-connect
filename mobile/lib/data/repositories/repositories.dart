@@ -563,3 +563,34 @@ class ModerationRepository {
 
   Future<void> block(String userId) => _c.rpc('block_user', params: {'p_target': userId});
 }
+
+// =====================================================================
+// WGF ZONE – contenuti ufficiali caricati con autorizzazione
+// =====================================================================
+final wgfConfigProvider = FutureProvider<({bool authorized, String note})>((ref) async {
+  ref.watch(currentUserIdProvider);
+  final rows = await ref
+      .watch(supabaseProvider)
+      .from('app_config')
+      .select('key, value')
+      .inFilter('key', ['wgf_content_authorized', 'wgf_permission_note']);
+  var authorized = false;
+  var note = '';
+  for (final r in rows) {
+    if (r['key'] == 'wgf_content_authorized') authorized = r['value'] == true;
+    if (r['key'] == 'wgf_permission_note') note = (r['value'] ?? '') as String;
+  }
+  return (authorized: authorized, note: note);
+});
+
+final officialContentProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  ref.watch(currentUserIdProvider);
+  final rows = await ref
+      .watch(supabaseProvider)
+      .from('official_content')
+      .select()
+      .eq('published', true)
+      .order('sort_order')
+      .order('created_at', ascending: false);
+  return List<Map<String, dynamic>>.from(rows);
+});

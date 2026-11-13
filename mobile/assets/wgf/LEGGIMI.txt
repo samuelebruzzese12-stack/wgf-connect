@@ -1,0 +1,6 @@
+Cartella per il materiale ufficiale WGF fornito dai titolari (con autorizzazione scritta).
+
+- logo.png : logo ufficiale WGF (PNG trasparente, consigliato 1024x1024). Se presente compare nella WGF Zone.
+
+Foto, notizie e altri contenuti NON vanno messi qui: si caricano dal pannello admin
+(sezione "Contenuti WGF"), così si aggiornano senza pubblicare una nuova versione dell'app.
