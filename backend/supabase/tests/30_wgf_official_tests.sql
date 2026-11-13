@@ -20,3 +20,14 @@ select tests.eq('ora gli utenti vedono solo i contenuti pubblicati', 'select cou
 select tests.login('44444444-4444-4444-4444-444444444444');
 select tests.eq('visibili anche alla fascia teen', 'select count(*) from public.official_content', '1');
 rollback;
+
+\echo '--- 19. Quiz WGF ---'
+begin;
+select tests.login('11111111-1111-1111-1111-111111111111');
+set local role authenticated;
+select tests.eq('quiz: 8 su 10 = 80', $$select public.submit_wgf_quiz(8, 10)::text$$, '80');
+select tests.eq('quiz: un punteggio più basso non sovrascrive il migliore', $$select public.submit_wgf_quiz(3, 10)::text$$, '80');
+select tests.denied('quiz: risposte impossibili rifiutate', $$select public.submit_wgf_quiz(11, 10)$$);
+select tests.denied('quiz: il punteggio non si modifica a mano', $$update public.profiles set wgf_quiz_score = 100 where id = auth.uid()$$);
+select tests.eq('il badge è visibile nella scheda profilo', $$select public.get_profile(auth.uid()) ->> 'wgf_quiz_score'$$, '80');
+rollback;

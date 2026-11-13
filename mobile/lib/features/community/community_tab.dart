@@ -70,8 +70,10 @@ class _CommunityTabState extends ConsumerState<CommunityTab> {
               feed,
               (posts) => posts.isEmpty
                   ? ListView(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
                       children: [
-                        const SizedBox(height: 60),
+                        if (_section == 0) const _FeaturedBanners(),
+                        const SizedBox(height: 40),
                         EmptyState(
                           icon: Icons.dynamic_feed_rounded,
                           title: 'Ancora nessun post qui',
@@ -88,9 +90,10 @@ class _CommunityTabState extends ConsumerState<CommunityTab> {
                     )
                   : ListView.separated(
                       padding: const EdgeInsets.fromLTRB(12, 4, 12, 96),
-                      itemCount: posts.length + (_section == 1 ? 1 : 0),
+                      itemCount: posts.length + (_section <= 1 ? 1 : 0),
                       separatorBuilder: (_, __) => const SizedBox(height: 12),
                       itemBuilder: (_, i) {
+                        if (_section == 0 && i == 0) return const _FeaturedBanners();
                         if (_section == 1 && i == 0) {
                           return GlassCard(
                             onTap: () => context.push('/wgf'),
@@ -102,7 +105,7 @@ class _CommunityTabState extends ConsumerState<CommunityTab> {
                             ]),
                           );
                         }
-                        final idx = _section == 1 ? i - 1 : i;
+                        final idx = _section <= 1 ? i - 1 : i;
                         return FadeSlideIn(index: idx, child: PostCard(post: posts[idx]));
                       },
                     ),
@@ -111,6 +114,43 @@ class _CommunityTabState extends ConsumerState<CommunityTab> {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Riquadri fissi in cima al feed: WGF ZONE e pagina del fondatore SENTINEL.
+class _FeaturedBanners extends StatelessWidget {
+  const _FeaturedBanners();
+
+  @override
+  Widget build(BuildContext context) {
+    Widget card(String title, String sub, IconData icon, Gradient g, Color fg, String route) => Expanded(
+          child: Pressable(
+            onTap: () => context.push(route),
+            child: Container(
+              height: 96,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(gradient: g, borderRadius: BorderRadius.circular(18)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(icon, color: fg),
+                  const Spacer(),
+                  Text(title, style: TextStyle(fontWeight: FontWeight.w900, color: fg)),
+                  Text(sub, maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 12, color: fg.withValues(alpha: 0.8))),
+                ],
+              ),
+            ),
+          ),
+        );
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(children: [
+        card('WGF ZONE', 'Squadra, storie, quiz', Icons.bolt_rounded, WgfColors.lionGradient, Colors.black, '/wgf'),
+        const SizedBox(width: 10),
+        card('SENTINEL', 'Il fondatore', Icons.auto_awesome_rounded, WgfColors.brandGradient, Colors.white, '/sentinel'),
+      ]),
     );
   }
 }

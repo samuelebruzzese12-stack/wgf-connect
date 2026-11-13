@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../core/constants/wgf.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/user_avatar.dart';
 import '../../core/widgets/visuals.dart';
@@ -63,10 +64,12 @@ class MyProfileTab extends ConsumerWidget {
                   const SizedBox(height: 12),
                   Text(p.name, style: Theme.of(context).textTheme.headlineSmall),
                   Text('@${p.username} · ${p.city}', style: const TextStyle(color: WgfColors.muted)),
-                  if (p.isCreator || p.isStaff) ...[
-                    const SizedBox(height: 6),
-                    TagChip(p.role == 'creator' ? 'Fondatore' : 'Staff', icon: Icons.shield_rounded),
-                  ],
+                  const SizedBox(height: 6),
+                  Wrap(spacing: 6, alignment: WrapAlignment.center, children: [
+                    if (p.isCreator) const TagChip('Fondatore', icon: Icons.auto_awesome_rounded)
+                    else if (p.isStaff) const TagChip('Staff', icon: Icons.shield_rounded),
+                    if (p.wgfQuizScore > 0) TagChip(quizBadge(p.wgfQuizScore), icon: Icons.emoji_events_rounded),
+                  ]),
                   if (p.bio != null && p.bio!.isNotEmpty) ...[
                     const SizedBox(height: 10),
                     Text(p.bio!, textAlign: TextAlign.center),

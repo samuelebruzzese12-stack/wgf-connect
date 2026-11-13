@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/constants/wgf.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/format.dart';
 import '../../core/widgets/user_avatar.dart';
@@ -13,215 +14,428 @@ import '../community/compose_post_screen.dart';
 /// Logo ufficiale WGF fornito dai titolari: mobile/assets/wgf/logo.png
 const kWgfLogoAsset = 'assets/wgf/logo.png';
 
-/// WGF ZONE: logo, galleria e notizie ufficiali (caricati dal pannello admin,
-/// visibili solo quando l'autorizzazione dei titolari è attiva).
-class WgfZoneScreen extends ConsumerWidget {
+/// Pagina WGF ZONE aperta da un link (con la sua barra in alto).
+class WgfZoneScreen extends StatelessWidget {
   const WgfZoneScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final cfg = ref.watch(wgfConfigProvider);
-    final content = ref.watch(officialContentProvider);
-
+  Widget build(BuildContext context) {
     return Scaffold(
-      body: AuroraBackground(
-        intensity: 1.1,
-        child: RefreshIndicator(
-          onRefresh: () async {
-            ref.invalidate(wgfConfigProvider);
-            ref.invalidate(officialContentProvider);
-          },
-          child: CustomScrollView(
-            slivers: [
-              SliverAppBar(
-                pinned: true,
-                expandedHeight: 280,
-                backgroundColor: WgfColors.black,
-                flexibleSpace: FlexibleSpaceBar(
-                  title: const Text('WGF ZONE'),
-                  background: Center(
-                    child: FadeSlideIn(
-                      child: SizedBox(
-                        height: 150,
-                        child: cfg.valueOrNull?.authorized == true
-                            ? Image.asset(
-                                kWgfLogoAsset,
-                                fit: BoxFit.contain,
-                                errorBuilder: (_, __, ___) => const _TextMark(),
-                              )
-                            : const _TextMark(),
+      appBar: AppBar(title: const Text('WGF ZONE')),
+      body: const WgfZoneBody(),
+    );
+  }
+}
+
+/// Il cuore WGF dell'app: squadra, storie, leggende, canali, quiz,
+/// discussioni, raduni e contenuti ufficiali autorizzati.
+class WgfZoneBody extends ConsumerWidget {
+  const WgfZoneBody({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cfg = ref.watch(wgfConfigProvider).valueOrNull;
+    final content = ref.watch(officialContentProvider);
+    final me = ref.watch(myProfileProvider).valueOrNull;
+
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(wgfConfigProvider);
+        ref.invalidate(officialContentProvider);
+      },
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
+        children: [
+          FadeSlideIn(child: _Hero(authorized: cfg?.authorized == true)),
+          const SizedBox(height: 16),
+
+          // Quiz + badge
+          FadeSlideIn(
+            index: 1,
+            child: _GoldCard(
+              onTap: () => context.push('/wgf/quiz'),
+              child: Row(children: [
+                const Icon(Icons.emoji_events_rounded, size: 40, color: WgfColors.lionGold),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    const Text('Quanto conosci i WGF?', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+                    Text(
+                      (me?.wgfQuizScore ?? 0) > 0
+                          ? 'Il tuo record: ${me!.wgfQuizScore}% · ${quizBadge(me.wgfQuizScore)}'
+                          : 'Fai il quiz e conquista il tuo badge da leone',
+                      style: const TextStyle(color: WgfColors.muted),
+                    ),
+                  ]),
+                ),
+                const Icon(Icons.chevron_right_rounded),
+              ]),
+            ),
+          ),
+          const SizedBox(height: 22),
+
+          _Title('La squadra WGF', Icons.groups_rounded),
+          SizedBox(
+            height: 150,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: kWgfTeam.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              itemBuilder: (_, i) {
+                final m = kWgfTeam[i];
+                return FadeSlideIn(
+                  index: i,
+                  child: SizedBox(
+                    width: 150,
+                    child: GlassCard(
+                      padding: const EdgeInsets.all(12),
+                      onTap: () => _showMember(context, m),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 44,
+                            height: 44,
+                            alignment: Alignment.center,
+                            decoration: const BoxDecoration(shape: BoxShape.circle, gradient: WgfColors.lionGradient),
+                            child: Text(m.name[0],
+                                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.black)),
+                          ),
+                          const Spacer(),
+                          Text(m.name, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                          Text(m.role, maxLines: 2, style: const TextStyle(color: WgfColors.muted, fontSize: 12)),
+                        ],
                       ),
                     ),
                   ),
-                ),
-              ),
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-                sliver: SliverList.list(
-                  children: [
-                    GlassCard(
-                      onTap: () => context.push('/compose', extra: const ComposeOptions(hashtag: 'wgf')),
-                      child: const Row(children: [
-                        Icon(Icons.forum_rounded, color: WgfColors.electricViolet),
-                        SizedBox(width: 10),
-                        Expanded(child: Text('Scrivi nella discussione #WGF')),
-                        Icon(Icons.chevron_right_rounded),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 22),
+
+          _Title('Serie, libri e fumetti', Icons.menu_book_rounded),
+          for (var i = 0; i < kWgfStories.length; i++)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: FadeSlideIn(
+                index: i,
+                child: GlassCard(
+                  child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(gradient: WgfColors.brandGradient, borderRadius: BorderRadius.circular(12)),
+                      child: Icon(
+                        kWgfStories[i].kind.contains('umetto') ? Icons.auto_stories_rounded : Icons.menu_book_rounded,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text(kWgfStories[i].title, style: const TextStyle(fontWeight: FontWeight.w800)),
+                        Text(kWgfStories[i].kind, style: const TextStyle(color: WgfColors.lionGold, fontSize: 12)),
+                        const SizedBox(height: 4),
+                        Text(kWgfStories[i].description, style: const TextStyle(color: WgfColors.muted)),
                       ]),
                     ),
-                    const SizedBox(height: 16),
-                    ...asyncContent(context, ref, content, cfg.valueOrNull),
-                  ],
+                  ]),
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+            ),
+          const SizedBox(height: 12),
 
-  List<Widget> asyncContent(
-    BuildContext context,
-    WidgetRef ref,
-    AsyncValue<List<Map<String, dynamic>>> content,
-    ({bool authorized, String note})? cfg,
-  ) {
-    if (cfg != null && !cfg.authorized) {
-      return [
-        const EmptyState(
-          icon: Icons.bolt_rounded,
-          title: 'Contenuti ufficiali in arrivo',
-          message: 'Qui compariranno foto, notizie e materiali ufficiali dei WGF. Intanto partecipa alla discussione #WGF!',
-        ),
-      ];
-    }
-    return content.when<List<Widget>>(
-      loading: () => [const Center(child: CircularProgressIndicator())],
-      error: (_, __) => [const EmptyState(icon: Icons.wifi_off_rounded, title: 'Impossibile caricare')],
-      data: (items) {
-        final gallery = items.where((i) => i['kind'] == 'gallery' && i['image_path'] != null).toList();
-        final news = items.where((i) => i['kind'] != 'gallery' && i['kind'] != 'logo').toList();
-        return [
-          if (gallery.isNotEmpty) ...[
-            Text('Galleria', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 10),
-            SizedBox(
-              height: 220,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: gallery.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 12),
-                itemBuilder: (_, i) => FadeSlideIn(
-                  index: i,
-                  child: GestureDetector(
-                    onTap: () => _openImage(context, gallery[i]),
-                    child: SizedBox(
-                      width: 180,
-                      child: PrivateImage(bucket: 'official', path: gallery[i]['image_path'] as String, height: 220),
+          _Title('Le leggende', Icons.visibility_rounded),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final l in kWgfLegends)
+                ActionChip(
+                  avatar: const Icon(Icons.local_fire_department_rounded, size: 18, color: WgfColors.lionOrange),
+                  label: Text(l.$1),
+                  onPressed: () => showDialog(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: Text(l.$1),
+                      content: Text(l.$2),
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            context.push('/compose', extra: ComposeOptions(hashtag: 'wgf'));
+                          },
+                          child: const Text('Scrivi una teoria'),
+                        ),
+                        FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('Chiudi')),
+                      ],
                     ),
                   ),
                 ),
+            ],
+          ),
+          const SizedBox(height: 22),
+
+          _Title('Vivi la community', Icons.bolt_rounded),
+          Row(children: [
+            Expanded(
+              child: _ActionTile(
+                icon: Icons.forum_rounded,
+                label: 'Discussioni #WGF',
+                onTap: () => context.push('/compose', extra: const ComposeOptions(hashtag: 'wgf')),
               ),
             ),
-            const SizedBox(height: 24),
-          ],
-          if (news.isNotEmpty) Text('Novità', style: Theme.of(context).textTheme.titleLarge),
-          for (var i = 0; i < news.length; i++)
-            Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: FadeSlideIn(index: i, child: _NewsCard(item: news[i])),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _ActionTile(icon: Icons.groups_rounded, label: 'Gruppi WGF', onTap: () => context.push('/groups')),
             ),
-          if (items.isEmpty)
-            const EmptyState(icon: Icons.bolt_rounded, title: 'Nessun contenuto ufficiale per ora'),
-          const SizedBox(height: 24),
-          if (cfg != null && cfg.note.isNotEmpty)
-            Text(cfg.note, textAlign: TextAlign.center, style: const TextStyle(color: WgfColors.muted, fontSize: 12)),
-        ];
-      },
-    );
-  }
-
-  void _openImage(BuildContext context, Map<String, dynamic> item) {
-    showDialog(
-      context: context,
-      builder: (ctx) => Dialog(
-        backgroundColor: Colors.black,
-        insetPadding: const EdgeInsets.all(12),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            InteractiveViewer(
-              child: PrivateImage(bucket: 'official', path: item['image_path'] as String, height: 420),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(children: [
-                Text(item['title'] as String, style: const TextStyle(fontWeight: FontWeight.w700)),
-                if (item['credits'] != null)
-                  Text(item['credits'] as String, style: const TextStyle(color: WgfColors.muted, fontSize: 12)),
-              ]),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _TextMark extends StatelessWidget {
-  const _TextMark();
-  @override
-  Widget build(BuildContext context) => Center(
-        child: ShaderMask(
-          shaderCallback: (r) => WgfColors.brandGradient.createShader(r),
-          child: const Text('WGF',
-              style: TextStyle(fontSize: 84, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 10)),
-        ),
-      );
-}
-
-class _NewsCard extends StatelessWidget {
-  const _NewsCard({required this.item});
-  final Map<String, dynamic> item;
-
-  @override
-  Widget build(BuildContext context) {
-    final link = item['link_url'] as String?;
-    return GlassCard(
-      onTap: link == null ? null : () => launchUrl(Uri.parse(link), mode: LaunchMode.externalApplication),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(children: [
-            TagChip(switch (item['kind']) { 'video' => 'Video', 'info' => 'Info', _ => 'Notizia' }, icon: Icons.bolt_rounded),
-            const Spacer(),
-            Text(timeAgo(DateTime.parse(item['created_at'] as String).toLocal()),
-                style: const TextStyle(color: WgfColors.muted, fontSize: 12)),
           ]),
-          const SizedBox(height: 8),
-          Text(item['title'] as String, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-          if (item['image_path'] != null) ...[
-            const SizedBox(height: 10),
-            PrivateImage(bucket: 'official', path: item['image_path'] as String, height: 200),
-          ],
-          if (item['body'] != null) ...[
-            const SizedBox(height: 8),
-            Text(item['body'] as String, style: const TextStyle(height: 1.5)),
-          ],
-          if (link != null) ...[
-            const SizedBox(height: 8),
-            const Row(children: [
-              Icon(Icons.open_in_new_rounded, size: 16, color: Color(0xFFC084FC)),
-              SizedBox(width: 6),
-              Text('Apri', style: TextStyle(color: Color(0xFFC084FC))),
+          const SizedBox(height: 10),
+          Row(children: [
+            Expanded(
+              child: _ActionTile(icon: Icons.event_rounded, label: 'Raduni WGF', onTap: () => context.push('/events')),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _ActionTile(
+                icon: Icons.brush_rounded,
+                label: 'Pubblica fan art',
+                onTap: () => context.push('/compose', extra: const ComposeOptions(hashtag: 'fanart')),
+              ),
+            ),
+          ]),
+          const SizedBox(height: 22),
+
+          _Title('Canali ufficiali', Icons.play_circle_rounded),
+          GlassCard(
+            padding: EdgeInsets.zero,
+            child: Column(children: [
+              for (final l in kWgfLinks)
+                ListTile(
+                  leading: Icon(
+                    l.label == 'YouTube'
+                        ? Icons.smart_display_rounded
+                        : l.label == 'Twitch'
+                            ? Icons.live_tv_rounded
+                            : Icons.photo_camera_rounded,
+                    color: WgfColors.lionGold,
+                  ),
+                  title: Text(l.label),
+                  subtitle: Text(l.handle),
+                  trailing: const Icon(Icons.open_in_new_rounded, size: 18),
+                  onTap: () => launchUrl(Uri.parse(l.url), mode: LaunchMode.externalApplication),
+                ),
             ]),
-          ],
-          if (item['credits'] != null) ...[
-            const SizedBox(height: 6),
-            Text(item['credits'] as String, style: const TextStyle(color: WgfColors.muted, fontSize: 11)),
-          ],
+          ),
+          const SizedBox(height: 22),
+
+          // Contenuti ufficiali (visibili solo con autorizzazione attiva)
+          if (cfg?.authorized == true)
+            ...content.when<List<Widget>>(
+              data: (items) => items.isEmpty
+                  ? []
+                  : [
+                      _Title('Dal mondo WGF', Icons.newspaper_rounded),
+                      for (final it in items.where((x) => x['kind'] != 'logo'))
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: GlassCard(
+                            onTap: it['link_url'] == null
+                                ? null
+                                : () => launchUrl(Uri.parse(it['link_url'] as String),
+                                    mode: LaunchMode.externalApplication),
+                            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                              Text(it['title'] as String, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                              Text(timeAgo(DateTime.parse(it['created_at'] as String).toLocal()),
+                                  style: const TextStyle(color: WgfColors.muted, fontSize: 12)),
+                              if (it['image_path'] != null) ...[
+                                const SizedBox(height: 8),
+                                PrivateImage(bucket: 'official', path: it['image_path'] as String, height: 200),
+                              ],
+                              if (it['body'] != null) ...[
+                                const SizedBox(height: 6),
+                                Text(it['body'] as String),
+                              ],
+                              if (it['credits'] != null)
+                                Text(it['credits'] as String, style: const TextStyle(color: WgfColors.muted, fontSize: 11)),
+                            ]),
+                          ),
+                        ),
+                    ],
+              loading: () => [],
+              error: (_, __) => [],
+            ),
+
+          const SizedBox(height: 8),
+          Text(
+            cfg?.authorized == true && cfg!.note.isNotEmpty
+                ? cfg.note
+                : 'WGF CONNECT è una community creata dai fan per i fan, non è un canale ufficiale dei WGF.',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: WgfColors.muted, fontSize: 12),
+          ),
         ],
       ),
     );
   }
+
+  void _showMember(BuildContext context, WgfMember m) {
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Container(
+            width: 80,
+            height: 80,
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(shape: BoxShape.circle, gradient: WgfColors.lionGradient),
+            child: Text(m.name[0], style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: Colors.black)),
+          ),
+          const SizedBox(height: 12),
+          Text(m.name, style: Theme.of(ctx).textTheme.headlineSmall),
+          Text(m.role, style: const TextStyle(color: WgfColors.lionGold)),
+          const SizedBox(height: 12),
+          Text(m.description, textAlign: TextAlign.center),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.push('/groups');
+            },
+            icon: const Icon(Icons.groups_rounded),
+            label: const Text('Trova il gruppo dei fan'),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+class _Hero extends StatefulWidget {
+  const _Hero({required this.authorized});
+  final bool authorized;
+
+  @override
+  State<_Hero> createState() => _HeroState();
+}
+
+class _HeroState extends State<_Hero> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(seconds: 4))
+    ..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (context, child) => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          gradient: LinearGradient(
+            begin: Alignment(-1 + _c.value, -1),
+            end: Alignment(1, 1 - _c.value),
+            colors: const [Color(0xFF2B1300), WgfColors.darkViolet, Color(0xFF120A1F)],
+          ),
+          border: Border.all(color: WgfColors.lionGold.withValues(alpha: 0.5 + 0.3 * _c.value), width: 1.4),
+          boxShadow: [
+            BoxShadow(color: WgfColors.lionOrange.withValues(alpha: 0.18 + 0.15 * _c.value), blurRadius: 26),
+          ],
+        ),
+        child: child,
+      ),
+      child: Column(
+        children: [
+          SizedBox(
+            height: 90,
+            child: widget.authorized
+                ? Image.asset(kWgfLogoAsset, errorBuilder: (_, __, ___) => const _WgfWordmark())
+                : const _WgfWordmark(),
+          ),
+          const SizedBox(height: 6),
+          const Text(kWgfChannelName, style: TextStyle(fontWeight: FontWeight.w700, color: WgfColors.lionGold)),
+          const SizedBox(height: 10),
+          const Text(
+            '"$kWgfCatchphrase"',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 18, fontStyle: FontStyle.italic, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 6),
+          const Text('Il punto d\'incontro dei leoni della community', style: TextStyle(color: WgfColors.muted)),
+        ],
+      ),
+    );
+  }
+}
+
+class _WgfWordmark extends StatelessWidget {
+  const _WgfWordmark();
+  @override
+  Widget build(BuildContext context) => Center(
+        child: ShaderMask(
+          shaderCallback: (r) => WgfColors.lionGradient.createShader(r),
+          child: const Text('WGF',
+              style: TextStyle(fontSize: 72, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 10)),
+        ),
+      );
+}
+
+class _GoldCard extends StatelessWidget {
+  const _GoldCard({required this.child, this.onTap});
+  final Widget child;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final box = Container(
+      padding: const EdgeInsets.all(1.4),
+      decoration: BoxDecoration(gradient: WgfColors.lionGradient, borderRadius: BorderRadius.circular(20)),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(color: WgfColors.surface, borderRadius: BorderRadius.circular(19)),
+        child: child,
+      ),
+    );
+    return onTap == null ? box : Pressable(onTap: onTap!, child: box);
+  }
+}
+
+class _ActionTile extends StatelessWidget {
+  const _ActionTile({required this.icon, required this.label, required this.onTap});
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => GlassCard(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+        onTap: onTap,
+        child: Column(children: [
+          Icon(icon, color: WgfColors.lionGold, size: 28),
+          const SizedBox(height: 6),
+          Text(label, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w700)),
+        ]),
+      );
+}
+
+class _Title extends StatelessWidget {
+  const _Title(this.text, this.icon);
+  final String text;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Row(children: [
+          Icon(icon, color: WgfColors.lionGold, size: 20),
+          const SizedBox(width: 8),
+          Text(text, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+        ]),
+      );
 }

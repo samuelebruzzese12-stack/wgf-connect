@@ -64,7 +64,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const BrandHeader(subtitle: 'Bentornato nella community'),
+                  const BrandHeader(subtitle: 'Bentornato nella community WGF'),
                   const SizedBox(height: 32),
                   TextFormField(
                     controller: _email,

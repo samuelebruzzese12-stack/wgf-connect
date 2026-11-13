@@ -20,6 +20,8 @@ class ProfileCard {
     required this.friendshipPreferences,
     this.age,
     this.verifiedAdult = false,
+    this.wgfQuizScore = 0,
+    this.isFounder = false,
   });
 
   final String id;
@@ -35,6 +37,8 @@ class ProfileCard {
   final List<String> friendshipPreferences;
   final int? age;
   final bool verifiedAdult;
+  final int wgfQuizScore;
+  final bool isFounder;
 
   String get name => (displayName?.isNotEmpty ?? false) ? displayName! : username;
 
@@ -52,6 +56,8 @@ class ProfileCard {
         friendshipPreferences: _strings(j['friendship_preferences']),
         age: j['age'] == null ? null : _int(j['age']),
         verifiedAdult: (j['verified_adult'] ?? false) as bool,
+        wgfQuizScore: _int(j['wgf_quiz_score']),
+        isFounder: j['role'] == 'founder',
       );
 }
 
@@ -76,6 +82,7 @@ class MyProfile {
   bool get showAge => raw['show_age'] as bool;
   bool get discoverable => raw['discoverable'] as bool;
   bool get isCreator => role == 'creator' || role == 'admin';
+  int get wgfQuizScore => _int(raw['wgf_quiz_score']);
   bool get isStaff => role == 'admin' || role == 'moderator';
   String get name => (displayName?.isNotEmpty ?? false) ? displayName! : username;
 }

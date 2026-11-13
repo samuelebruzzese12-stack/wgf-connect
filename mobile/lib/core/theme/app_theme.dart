@@ -11,6 +11,15 @@ abstract final class WgfColors {
   static const white = Color(0xFFF7F5FF);
   static const muted = Color(0xFF9C98AD);
   static const danger = Color(0xFFFF4D6A);
+  // Accento "leone" per le sezioni WGF
+  static const lionGold = Color(0xFFFFB627);
+  static const lionOrange = Color(0xFFF2701D);
+
+  static const lionGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [lionGold, lionOrange],
+  );
 
   static const brandGradient = LinearGradient(
     begin: Alignment.topLeft,

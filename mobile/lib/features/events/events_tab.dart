@@ -9,6 +9,21 @@ import '../../core/widgets/visuals.dart';
 import '../../data/models/models.dart';
 import '../../data/repositories/repositories.dart';
 
+/// Pagina completa WGF EVENTS (aperta dalla WGF ZONE o dal menu).
+class EventsScreen extends StatelessWidget {
+  const EventsScreen({super.key});
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        appBar: AppBar(title: const Text('WGF EVENTS')),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => context.push('/events/new'),
+          icon: const Icon(Icons.add_rounded),
+          label: const Text('Proponi raduno'),
+        ),
+        body: const EventsTab(),
+      );
+}
+
 /// WGF EVENTS: calendario di incontri, raduni ed eventi gaming.
 class EventsTab extends ConsumerStatefulWidget {
   const EventsTab({super.key});

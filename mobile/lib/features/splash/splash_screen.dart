@@ -61,7 +61,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                           style: Theme.of(context).textTheme.headlineLarge?.copyWith(letterSpacing: 4 + 4 * text.value),
                         ),
                         const SizedBox(height: 8),
-                        const Text('La community dei fan', style: TextStyle(color: WgfColors.muted)),
+                        const Text('La community dei fan WGF', style: TextStyle(color: WgfColors.muted)),
                       ],
                     ),
                   ),

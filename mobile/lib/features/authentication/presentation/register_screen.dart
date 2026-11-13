@@ -69,7 +69,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const BrandHeader(subtitle: 'Crea il tuo account'),
+                        const BrandHeader(subtitle: 'Unisciti alla community dei fan WGF'),
                         const SizedBox(height: 32),
                         TextFormField(
                           controller: _email,

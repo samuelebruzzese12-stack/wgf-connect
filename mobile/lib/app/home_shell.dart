@@ -9,7 +9,7 @@ import '../features/chat/conversations_tab.dart';
 import '../features/community/community_tab.dart';
 import '../features/community/compose_post_screen.dart';
 import '../features/discover/discover_tab.dart';
-import '../features/events/events_tab.dart';
+import '../features/wgf/wgf_zone_screen.dart';
 import '../features/profile/my_profile_tab.dart';
 
 class HomeShell extends ConsumerStatefulWidget {
@@ -22,7 +22,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   int _index = 0;
   final _visited = <int>{0};
 
-  static const _titles = ['Community', 'Discover', 'Chat', 'Eventi', 'Profilo'];
+  static const _titles = ['Community', 'Discover', 'WGF ZONE', 'Chat', 'Profilo'];
 
   void _openExplore() {
     showModalBottomSheet(
@@ -50,7 +50,8 @@ class _HomeShellState extends ConsumerState<HomeShell> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              tile(Icons.bolt_rounded, 'WGF ZONE', 'Foto, notizie e contenuti ufficiali', '/wgf'),
+              tile(Icons.event_rounded, 'WGF EVENTS', 'Raduni, incontri ed eventi gaming', '/events'),
+              tile(Icons.emoji_events_rounded, 'Quiz WGF', 'Quanto conosci i WGF?', '/wgf/quiz'),
               tile(Icons.travel_explore_rounded, 'FanFinder', 'Cerca fan per città e interessi', '/fanfinder'),
               tile(Icons.groups_rounded, 'Gruppi', 'WGF, gaming, fan art e città', '/groups'),
               tile(Icons.favorite_rounded, 'Non sei solo', 'Ascolto e incoraggiamento', '/support'),
@@ -71,12 +72,6 @@ class _HomeShellState extends ConsumerState<HomeShell> {
           onPressed: () => context.push('/compose', extra: const ComposeOptions()),
           child: const Icon(Icons.add_rounded),
         );
-      case 3:
-        return FloatingActionButton.extended(
-          onPressed: () => context.push('/events/new'),
-          icon: const Icon(Icons.add_rounded),
-          label: const Text('Proponi evento'),
-        );
       default:
         return null;
     }
@@ -90,8 +85,8 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     final tabs = <Widget>[
       const CommunityTab(),
       const DiscoverTab(),
+      const WgfZoneBody(),
       const ConversationsTab(),
-      const EventsTab(),
       const MyProfileTab(),
     ];
 
@@ -142,6 +137,14 @@ class _HomeShellState extends ConsumerState<HomeShell> {
             const NavigationDestination(icon: Icon(Icons.dynamic_feed_rounded), label: 'Community'),
             const NavigationDestination(icon: Icon(Icons.style_rounded), label: 'Discover'),
             NavigationDestination(
+              icon: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(gradient: WgfColors.lionGradient, borderRadius: BorderRadius.circular(10)),
+                child: const Text('WGF', style: TextStyle(fontWeight: FontWeight.w900, color: Colors.black, fontSize: 13)),
+              ),
+              label: 'WGF',
+            ),
+            NavigationDestination(
               icon: Badge(
                 isLabelVisible: unreadMsg > 0,
                 label: Text('$unreadMsg'),
@@ -149,7 +152,6 @@ class _HomeShellState extends ConsumerState<HomeShell> {
               ),
               label: 'Chat',
             ),
-            const NavigationDestination(icon: Icon(Icons.event_rounded), label: 'Eventi'),
             const NavigationDestination(icon: Icon(Icons.person_rounded), label: 'Profilo'),
           ],
         ),

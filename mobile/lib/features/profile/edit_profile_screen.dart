@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/options.dart';
+import '../../core/constants/wgf.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/format.dart';
 import '../../core/widgets/visuals.dart';
@@ -20,9 +21,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final _bio = TextEditingController();
   final _city = TextEditingController();
   final _games = TextEditingController();
-  final _wgf = TextEditingController();
   final _interests = <String>{};
   final _friendship = <String>{};
+  final _wgf = <String>{};
   bool _loaded = false;
   bool _busy = false;
 
@@ -33,14 +34,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _bio.text = p.bio ?? '';
     _city.text = p.city;
     _games.text = p.favoriteGames.join(', ');
-    _wgf.text = p.favoriteWgfCharacters.join(', ');
+    _wgf.addAll(p.favoriteWgfCharacters);
     _interests.addAll(p.interests);
     _friendship.addAll(p.friendshipPreferences);
   }
 
   @override
   void dispose() {
-    for (final c in [_name, _bio, _city, _games, _wgf]) {
+    for (final c in [_name, _bio, _city, _games]) {
       c.dispose();
     }
     super.dispose();
@@ -54,7 +55,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         'bio': _bio.text.trim().isEmpty ? null : _bio.text.trim(),
         'city': _city.text.trim(),
         'favorite_games': splitTags(_games.text),
-        'favorite_wgf_characters': splitTags(_wgf.text),
+        'favorite_wgf_characters': _wgf.toList(),
         'interests': _interests.toList(),
         'friendship_preferences': _friendship.toList(),
       });
@@ -101,15 +102,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               decoration: const InputDecoration(labelText: 'Città', helperText: 'Scelta da te: non usiamo il GPS'),
             ),
             const SizedBox(height: 12),
-            TextField(
-              controller: _wgf,
-              decoration: const InputDecoration(
-                labelText: 'Personaggi WGF preferiti',
-                helperText: 'Separati da virgola',
-                prefixIcon: Icon(Icons.bolt_rounded),
-              ),
-            ),
-            const SizedBox(height: 12),
+            _chips('Personaggi WGF preferiti', kWgfCharacters, _wgf),
+            const SizedBox(height: 16),
             TextField(
               controller: _games,
               decoration: const InputDecoration(

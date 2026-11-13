@@ -594,3 +594,6 @@ final officialContentProvider = FutureProvider<List<Map<String, dynamic>>>((ref)
       .order('created_at', ascending: false);
   return List<Map<String, dynamic>>.from(rows);
 });
+
+Future<int> submitWgfQuiz(SupabaseClient c, int correct, int total) async =>
+    ((await c.rpc('submit_wgf_quiz', params: {'p_correct': correct, 'p_total': total})) as num).toInt();

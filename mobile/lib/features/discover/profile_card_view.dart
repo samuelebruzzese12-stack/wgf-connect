@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/constants/wgf.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/user_avatar.dart';
 import '../../core/widgets/visuals.dart';
@@ -188,6 +189,13 @@ class ProfileDetails extends ConsumerWidget {
           ),
         ),
         Center(child: Text('@${p.username} · ${p.city}', style: const TextStyle(color: WgfColors.muted))),
+        if (p.isFounder || p.wgfQuizScore > 0) ...[
+          const SizedBox(height: 8),
+          Wrap(alignment: WrapAlignment.center, spacing: 6, children: [
+            if (p.isFounder) const TagChip('Fondatore', icon: Icons.auto_awesome_rounded),
+            if (p.wgfQuizScore > 0) TagChip(quizBadge(p.wgfQuizScore), icon: Icons.emoji_events_rounded),
+          ]),
+        ],
         if (p.bio != null && p.bio!.isNotEmpty) ...[
           const SizedBox(height: 16),
           Text(p.bio!, textAlign: TextAlign.center),
