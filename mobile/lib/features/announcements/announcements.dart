@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -81,7 +83,9 @@ class _AnnouncementGateState extends ConsumerState<AnnouncementGate> {
   }
 }
 
-/// Finestra a comparsa animata con l'avviso.
+/// Arrivo cinematografico dell'avviso: raggi rotanti, onde d'urto,
+/// esplosione di particelle, scossa (urgente), carta che si ribalta in 3D
+/// e titolo che si scrive lettera per lettera.
 Future<void> showAnnouncementDialog(BuildContext context, Map<String, dynamic> a) {
   final level = (a['level'] ?? 'important') as String;
   level == 'urgent' ? HapticFeedback.heavyImpact() : HapticFeedback.mediumImpact();
@@ -89,15 +93,9 @@ Future<void> showAnnouncementDialog(BuildContext context, Map<String, dynamic> a
     context: context,
     barrierDismissible: false,
     barrierLabel: 'comunicazione',
-    barrierColor: Colors.black.withValues(alpha: 0.8),
-    transitionDuration: const Duration(milliseconds: 450),
-    transitionBuilder: (ctx, anim, _, child) {
-      final c = CurvedAnimation(parent: anim, curve: Curves.easeOutBack);
-      return FadeTransition(
-        opacity: anim,
-        child: ScaleTransition(scale: Tween(begin: 0.85, end: 1.0).animate(c), child: child),
-      );
-    },
+    barrierColor: Colors.transparent,
+    transitionDuration: const Duration(milliseconds: 300),
+    transitionBuilder: (ctx, anim, _, child) => FadeTransition(opacity: anim, child: child),
     pageBuilder: (ctx, _, __) => _AnnouncementView(a: a),
   );
 }
@@ -110,15 +108,36 @@ class _AnnouncementView extends StatefulWidget {
   State<_AnnouncementView> createState() => _AnnouncementViewState();
 }
 
-class _AnnouncementViewState extends State<_AnnouncementView> with SingleTickerProviderStateMixin {
-  late final AnimationController _pulse =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 1100))..repeat(reverse: true);
+class _AnnouncementViewState extends State<_AnnouncementView> with TickerProviderStateMixin {
+  // 0 → 1 in 2,4 s: sequenza d'ingresso
+  late final AnimationController _intro =
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 2400))..forward();
+  // ciclo continuo: raggi, pulsazione, scintille
+  late final AnimationController _loop =
+      AnimationController(vsync: this, duration: const Duration(seconds: 6))..repeat();
+
+  bool get _urgent => widget.a['level'] == 'urgent';
+
+  @override
+  void initState() {
+    super.initState();
+    if (_urgent) {
+      Future.delayed(const Duration(milliseconds: 650), () => HapticFeedback.heavyImpact());
+      Future.delayed(const Duration(milliseconds: 900), () => HapticFeedback.heavyImpact());
+    } else {
+      Future.delayed(const Duration(milliseconds: 650), () => HapticFeedback.lightImpact());
+    }
+  }
 
   @override
   void dispose() {
-    _pulse.dispose();
+    _intro.dispose();
+    _loop.dispose();
     super.dispose();
   }
+
+  double _seg(double from, double to, [Curve curve = Curves.easeOutCubic]) =>
+      curve.transform(((_intro.value - from) / (to - from)).clamp(0.0, 1.0).toDouble());
 
   @override
   Widget build(BuildContext context) {
@@ -126,70 +145,368 @@ class _AnnouncementViewState extends State<_AnnouncementView> with SingleTickerP
     final st = announcementStyle((a['level'] ?? 'important') as String);
     final link = a['link_url'] as String?;
     final created = DateTime.tryParse((a['created_at'] ?? '') as String)?.toLocal();
+    final title = (a['title'] ?? '') as String;
+
     return Material(
       color: Colors.transparent,
-      child: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(22),
-            child: AnimatedBuilder(
-              animation: _pulse,
-              builder: (_, child) => Container(
-                padding: const EdgeInsets.all(2),
-                decoration: BoxDecoration(
-                  gradient: st.gradient,
-                  borderRadius: BorderRadius.circular(26),
-                  boxShadow: [BoxShadow(color: st.color.withValues(alpha: 0.25 + 0.3 * _pulse.value), blurRadius: 34)],
-                ),
-                child: child,
-              ),
-              child: Container(
-                padding: const EdgeInsets.fromLTRB(22, 22, 22, 16),
-                decoration: BoxDecoration(color: WgfColors.surface, borderRadius: BorderRadius.circular(24)),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ScaleTransition(
-                        scale: Tween(begin: 0.92, end: 1.08).animate(_pulse),
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(shape: BoxShape.circle, gradient: st.gradient),
-                          child: Icon(st.icon, size: 40, color: Colors.white),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      Text(st.label, style: TextStyle(color: st.color, letterSpacing: 2, fontWeight: FontWeight.w800, fontSize: 12)),
-                      const SizedBox(height: 6),
-                      Text(
-                        (a['title'] ?? '') as String,
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
-                      ),
-                      const SizedBox(height: 12),
-                      Text((a['body'] ?? '') as String, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, height: 1.5)),
-                      const SizedBox(height: 12),
-                      Text(
-                        'SENTINEL · WGF CONNECT${created != null ? ' · ${timeAgo(created)}' : ''}',
-                        style: const TextStyle(color: WgfColors.muted, fontSize: 12),
-                      ),
-                      const SizedBox(height: 18),
-                      if (link != null) ...[
-                        OutlinedButton.icon(
-                          onPressed: () => launchUrl(Uri.parse(link), mode: LaunchMode.externalApplication),
-                          icon: const Icon(Icons.open_in_new_rounded),
-                          label: const Text('Apri il link'),
-                        ),
-                        const SizedBox(height: 8),
+      child: AnimatedBuilder(
+        animation: Listenable.merge([_intro, _loop]),
+        builder: (context, _) {
+          final dark = _seg(0, 0.15);
+          final rays = _seg(0.05, 0.4);
+          final iconIn = _seg(0.1, 0.45, Curves.elasticOut);
+          final card = _seg(0.35, 0.75, Curves.easeOutBack);
+          final typed = _seg(0.55, 0.95, Curves.linear);
+          // scossa per gli avvisi urgenti
+          final shake = _urgent && _intro.value > 0.25 && _intro.value < 0.5
+              ? math.sin(_intro.value * 140) * 8 * (0.5 - _intro.value) * 4
+              : 0.0;
+          final size = MediaQuery.of(context).size;
+
+          return Stack(
+            children: [
+              // 1. oscuramento + vignetta colorata
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      radius: 1.1,
+                      colors: [
+                        st.color.withValues(alpha: 0.28 * dark),
+                        Colors.black.withValues(alpha: 0.92 * dark),
                       ],
-                      GradientButton(label: 'Ho capito', icon: Icons.check_rounded, onPressed: () => Navigator.of(context).pop()),
-                    ],
+                    ),
                   ),
                 ),
               ),
+              // 2. raggi di luce rotanti
+              Positioned.fill(
+                child: Opacity(
+                  opacity: 0.55 * rays,
+                  child: CustomPaint(painter: _RaysPainter(_loop.value, st.color)),
+                ),
+              ),
+              // 3. onde d'urto
+              Positioned.fill(child: CustomPaint(painter: _ShockwavePainter(_intro.value, _loop.value, st.color))),
+              // 4. lampo urgente
+              if (_urgent)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: ColoredBox(
+                      color: WgfColors.danger.withValues(
+                        alpha: (_intro.value < 0.5 ? (math.sin(_intro.value * 60).abs() * 0.18) : 0) +
+                            0.05 * (0.5 + 0.5 * math.sin(_loop.value * math.pi * 8)),
+                      ),
+                    ),
+                  ),
+                ),
+              // 5. esplosione di particelle
+              if (_intro.value > 0.12)
+                Center(child: ParticleBurst(key: const ValueKey('burst'), size: size.shortestSide * 1.3, count: 70)),
+              // 6. contenuto
+              SafeArea(
+                child: Center(
+                  child: Transform.translate(
+                    offset: Offset(shake, 0),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(22),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // megafono che entra roteando
+                          Transform.rotate(
+                            angle: (1 - iconIn) * -math.pi,
+                            child: Transform.scale(
+                              scale: iconIn * (1 + 0.06 * math.sin(_loop.value * math.pi * 12)),
+                              child: Container(
+                                padding: const EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: st.gradient,
+                                  boxShadow: [
+                                    BoxShadow(color: st.color.withValues(alpha: 0.7), blurRadius: 40, spreadRadius: 4),
+                                  ],
+                                ),
+                                child: Icon(st.icon, size: 48, color: Colors.white),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          // carta che si ribalta in 3D
+                          Opacity(
+                            opacity: card.clamp(0.0, 1.0).toDouble(),
+                            child: Transform(
+                              alignment: Alignment.topCenter,
+                              transform: Matrix4.identity()
+                                ..setEntry(3, 2, 0.0015)
+                                ..rotateX((1 - card) * 1.3),
+                              child: Container(
+                                padding: const EdgeInsets.all(2),
+                                decoration: BoxDecoration(
+                                  gradient: SweepGradient(
+                                    transform: GradientRotation(_loop.value * 2 * math.pi),
+                                    colors: [st.color, Colors.white, st.color, WgfColors.darkViolet, st.color],
+                                  ),
+                                  borderRadius: BorderRadius.circular(26),
+                                  boxShadow: [BoxShadow(color: st.color.withValues(alpha: 0.45), blurRadius: 36)],
+                                ),
+                                child: Container(
+                                  padding: const EdgeInsets.fromLTRB(22, 20, 22, 16),
+                                  decoration: BoxDecoration(color: WgfColors.surface, borderRadius: BorderRadius.circular(24)),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      ShaderMask(
+                                        shaderCallback: (r) => LinearGradient(
+                                          colors: [st.color, Colors.white, st.color],
+                                          stops: [0, (_loop.value * 3 % 1), 1],
+                                        ).createShader(r),
+                                        child: Text(st.label,
+                                            style: const TextStyle(
+                                                color: Colors.white, letterSpacing: 3, fontWeight: FontWeight.w900, fontSize: 12)),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      // titolo scritto lettera per lettera
+                                      Text(
+                                        title.substring(0, (title.length * typed).round()) + (typed < 1 ? '▌' : ''),
+                                        textAlign: TextAlign.center,
+                                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Opacity(
+                                        opacity: _seg(0.8, 1),
+                                        child: Column(children: [
+                                          Text((a['body'] ?? '') as String,
+                                              textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, height: 1.5)),
+                                          const SizedBox(height: 12),
+                                          Text(
+                                            'SENTINEL · WGF CONNECT${created != null ? ' · ${timeAgo(created)}' : ''}',
+                                            style: const TextStyle(color: WgfColors.muted, fontSize: 12),
+                                          ),
+                                          const SizedBox(height: 18),
+                                          if (link != null) ...[
+                                            OutlinedButton.icon(
+                                              onPressed: () => launchUrl(Uri.parse(link), mode: LaunchMode.externalApplication),
+                                              icon: const Icon(Icons.open_in_new_rounded),
+                                              label: const Text('Apri il link'),
+                                            ),
+                                            const SizedBox(height: 8),
+                                          ],
+                                          GradientButton(
+                                            label: 'Ho capito',
+                                            icon: Icons.check_rounded,
+                                            onPressed: _intro.value < 0.8 ? null : () => Navigator.of(context).pop(),
+                                          ),
+                                        ]),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _RaysPainter extends CustomPainter {
+  _RaysPainter(this.t, this.color);
+  final double t;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size s) {
+    final c = Offset(s.width / 2, s.height * 0.38);
+    final r = s.longestSide;
+    const rays = 14;
+    final paint = Paint()
+      ..shader = RadialGradient(colors: [color.withValues(alpha: 0.55), color.withValues(alpha: 0)])
+          .createShader(Rect.fromCircle(center: c, radius: r * 0.8));
+    for (var i = 0; i < rays; i++) {
+      final a = t * 2 * math.pi + i * 2 * math.pi / rays;
+      final path = Path()
+        ..moveTo(c.dx, c.dy)
+        ..lineTo(c.dx + r * math.cos(a - 0.07), c.dy + r * math.sin(a - 0.07))
+        ..lineTo(c.dx + r * math.cos(a + 0.07), c.dy + r * math.sin(a + 0.07))
+        ..close();
+      canvas.drawPath(path, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_RaysPainter o) => o.t != t;
+}
+
+class _ShockwavePainter extends CustomPainter {
+  _ShockwavePainter(this.intro, this.loop, this.color);
+  final double intro;
+  final double loop;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size s) {
+    final c = Offset(s.width / 2, s.height * 0.38);
+    final maxR = s.longestSide * 0.9;
+    // 3 onde d'urto iniziali
+    for (var i = 0; i < 3; i++) {
+      final p = ((intro - 0.1 - i * 0.08) / 0.5).clamp(0.0, 1.0).toDouble();
+      if (p <= 0 || p >= 1) continue;
+      canvas.drawCircle(
+        c,
+        maxR * Curves.easeOutCubic.transform(p),
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 6 * (1 - p) + 1
+          ..color = color.withValues(alpha: 0.8 * (1 - p)),
+      );
+    }
+    // onde lente continue
+    for (var i = 0; i < 2; i++) {
+      final p = (loop * 3 + i * 0.5) % 1;
+      canvas.drawCircle(
+        c,
+        60 + 220 * p,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5
+          ..color = color.withValues(alpha: 0.35 * (1 - p)),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_ShockwavePainter o) => o.intro != intro || o.loop != loop;
+}
+
+/// Animazione di "lancio" per l'admin dopo l'invio: il megafono decolla
+/// lasciando una scia, onde che si propagano e contatore dei fan raggiunti.
+Future<void> showLaunchCelebration(BuildContext context, {required String level, int? recipients}) {
+  HapticFeedback.heavyImpact();
+  return showGeneralDialog(
+    context: context,
+    barrierDismissible: true,
+    barrierLabel: 'inviata',
+    barrierColor: Colors.black.withValues(alpha: 0.9),
+    transitionDuration: const Duration(milliseconds: 250),
+    pageBuilder: (ctx, _, __) => _LaunchView(level: level, recipients: recipients),
+  );
+}
+
+class _LaunchView extends StatefulWidget {
+  const _LaunchView({required this.level, this.recipients});
+  final String level;
+  final int? recipients;
+
+  @override
+  State<_LaunchView> createState() => _LaunchViewState();
+}
+
+class _LaunchViewState extends State<_LaunchView> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 3200))
+    ..forward().whenComplete(() {
+      if (mounted) Navigator.of(context).maybePop();
+    });
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(milliseconds: 700), () => HapticFeedback.mediumImpact());
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final st = announcementStyle(widget.level);
+    final size = MediaQuery.of(context).size;
+    return Material(
+      color: Colors.transparent,
+      child: AnimatedBuilder(
+        animation: _c,
+        builder: (context, _) {
+          final v = _c.value;
+          final charge = Curves.easeInOut.transform((v / 0.25).clamp(0.0, 1.0).toDouble());
+          final fly = Curves.easeInCubic.transform(((v - 0.25) / 0.3).clamp(0.0, 1.0).toDouble());
+          final waves = ((v - 0.45) / 0.5).clamp(0.0, 1.0).toDouble();
+          final text = Curves.easeOutBack.transform(((v - 0.5) / 0.25).clamp(0.0, 1.0).toDouble());
+          final count = ((widget.recipients ?? 0) * Curves.easeOut.transform(((v - 0.5) / 0.4).clamp(0.0, 1.0).toDouble())).round();
+          final shakeX = v < 0.25 ? math.sin(v * 200) * 3 * charge : 0.0;
+          return Stack(children: [
+            Positioned.fill(child: CustomPaint(painter: _ShockwavePainter(waves * 0.6 + 0.1, v, st.color))),
+            // scia del razzo
+            if (fly > 0)
+              Positioned(
+                left: size.width / 2 - 3,
+                top: size.height * 0.45 - size.height * 0.6 * fly,
+                child: Container(
+                  width: 6,
+                  height: size.height * 0.6 * fly + 40,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(3),
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [st.color, st.color.withValues(alpha: 0)],
+                    ),
+                  ),
+                ),
+              ),
+            if (waves > 0) Center(child: ParticleBurst(size: size.shortestSide * 1.4, count: 80)),
+            // megafono che si carica e decolla
+            Positioned(
+              left: size.width / 2 - 44 + shakeX,
+              top: size.height * 0.45 - 44 - size.height * 0.7 * fly,
+              child: Transform.scale(
+                scale: 1 + 0.25 * charge - 0.5 * fly,
+                child: Container(
+                  width: 88,
+                  height: 88,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: st.gradient,
+                    boxShadow: [BoxShadow(color: st.color.withValues(alpha: 0.4 + 0.5 * charge), blurRadius: 20 + 30 * charge)],
+                  ),
+                  child: Icon(Icons.campaign_rounded, size: 46, color: Colors.white),
+                ),
+              ),
             ),
-          ),
-        ),
+            // testo finale
+            Center(
+              child: Opacity(
+                opacity: text.clamp(0.0, 1.0).toDouble(),
+                child: Transform.scale(
+                  scale: 0.7 + 0.3 * text,
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    ShaderMask(
+                      shaderCallback: (r) => st.gradient.createShader(r),
+                      child: const Text('INVIATA!',
+                          style: TextStyle(fontSize: 46, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 4)),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      widget.recipients == null ? 'A tutta la community WGF' : 'Raggiunti $count fan',
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                    ),
+                  ]),
+                ),
+              ),
+            ),
+          ]);
+        },
       ),
     );
   }
@@ -253,10 +570,16 @@ class _SendAnnouncementScreenState extends ConsumerState<SendAnnouncementScreen>
             expiresHours: _hours,
             link: link.isEmpty ? null : link,
           );
+      final level = _level;
       _title.clear();
       _body.clear();
       _link.clear();
-      _snack('Comunicazione inviata a tutta la community 📢');
+      int? recipients;
+      try {
+        final stats = await ref.read(supabaseProvider).rpc('admin_stats');
+        recipients = ((stats as Map)['users_active'] as num?)?.toInt();
+      } catch (_) {}
+      if (mounted) await showLaunchCelebration(context, level: level, recipients: recipients);
     } catch (e) {
       _snack(friendlyError(e));
     } finally {
