@@ -1,0 +1,74 @@
+name: Build APK
+
+# Costruisce l'APK di prova nel cloud: si avvia a ogni push o a mano
+# (scheda Actions → Build APK → Run workflow). Nessun computer necessario.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Controllo segreti
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "::error::Aggiungi i segreti SUPABASE_URL e SUPABASE_ANON_KEY (Settings → Secrets and variables → Actions)"
+            exit 1
+          fi
+
+      - name: Genera la parte Android
+        run: |
+          flutter create --platforms=android --org it.wgfconnect --project-name wgf_connect .
+          rm -f test/widget_test.dart
+          M=android/app/src/main/AndroidManifest.xml
+          # permesso Internet, nome dell'app, apertura di numeri di telefono e link
+          sed -i 's#<manifest xmlns:android="http://schemas.android.com/apk/res/android">#<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n    <uses-permission android:name="android.permission.INTERNET"/>#' $M
+          sed -i 's#android:label="[^"]*"#android:label="WGF CONNECT"#' $M
+          sed -i 's#</manifest>#    <queries>\n        <intent><action android:name="android.intent.action.DIAL"/><data android:scheme="tel"/></intent>\n        <intent><action android:name="android.intent.action.VIEW"/><data android:scheme="https"/></intent>\n    </queries>\n</manifest>#' $M
+          cat $M
+
+      - run: flutter pub get
+
+      - name: Icone dal logo originale
+        run: dart run flutter_launcher_icons
+
+      - name: Analisi del codice (solo informativa)
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings || true
+
+      - name: Build APK
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          flutter build apk --release --split-per-abi \
+            --dart-define=SUPABASE_URL="$SUPABASE_URL" \
+            --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY"
+          mkdir -p ../apk
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk ../apk/WGF-CONNECT.apk
+          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk ../apk/WGF-CONNECT-telefoni-vecchi.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WGF-CONNECT-APK
+          path: apk/
+          retention-days: 30
