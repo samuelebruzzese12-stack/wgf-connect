@@ -1,0 +1,16 @@
+# Flutter / Dart
+mobile/.dart_tool/
+mobile/build/
+mobile/.flutter-plugins*
+mobile/android/key.properties
+*.jks
+*.keystore
+# Segreti: MAI committare
+.env
+.env.*
+backend/supabase/.branches/
+backend/supabase/.temp/
+google-services.json
+# Editor
+.idea/
+.DS_Store
