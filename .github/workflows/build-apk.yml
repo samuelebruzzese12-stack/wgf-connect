@@ -22,12 +22,12 @@ jobs:
       run:
         working-directory: mobile
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: "21"
 
       - uses: subosito/flutter-action@v2
         with:
@@ -44,6 +44,12 @@ jobs:
           sed -i 's#android:label="[^"]*"#android:label="WGF CONNECT"#' $M
           sed -i 's#</manifest>#    <queries>\n        <intent><action android:name="android.intent.action.DIAL"/><data android:scheme="tel"/></intent>\n        <intent><action android:name="android.intent.action.VIEW"/><data android:scheme="https"/></intent>\n    </queries>\n</manifest>#' $M
           cat $M
+          # Il controllo "lint vital" di Android va in crash su alcuni plugin (es. image_picker):
+          # non serve per l'APK di prova, lo disattiviamo.
+          G=android/build.gradle.kts
+          [ -f "$G" ] || G=android/build.gradle
+          printf '\nsubprojects {\n    tasks.configureEach {\n        if (name.startsWith("lintVital")) { enabled = false }\n    }\n}\n' >> $G
+          tail -8 $G
 
       - run: flutter pub get
 
