@@ -43,7 +43,7 @@ jobs:
           rm -f test/widget_test.dart
           M=android/app/src/main/AndroidManifest.xml
           # permesso Internet, nome dell'app, apertura di numeri di telefono e link
-          sed -i 's#<manifest xmlns:android="http://schemas.android.com/apk/res/android">#<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n    <uses-permission android:name="android.permission.INTERNET"/>#' $M
+          sed -i 's#<manifest xmlns:android="http://schemas.android.com/apk/res/android">#<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n    <uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>\n    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>#' $M
           sed -i 's#android:label="[^"]*"#android:label="WGF CONNECT"#' $M
           sed -i 's#</manifest>#    <queries>\n        <intent><action android:name="android.intent.action.DIAL"/><data android:scheme="tel"/></intent>\n        <intent><action android:name="android.intent.action.VIEW"/><data android:scheme="https"/></intent>\n    </queries>\n</manifest>#' $M
           cat $M
@@ -53,6 +53,17 @@ jobs:
           [ -f "$G" ] || G=android/build.gradle
           printf '\nsubprojects {\n    tasks.configureEach {\n        if (name.startsWith("lintVital")) { enabled = false }\n    }\n}\n' >> $G
           tail -8 $G
+          # flutter_local_notifications richiede il "core library desugaring"
+          A=android/app/build.gradle.kts
+          if [ -f "$A" ]; then
+            sed -i 's/compileOptions {/compileOptions {\n        isCoreLibraryDesugaringEnabled = true/' $A
+            printf '\ndependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")\n}\n' >> $A
+          else
+            A=android/app/build.gradle
+            sed -i 's/compileOptions {/compileOptions {\n        coreLibraryDesugaringEnabled true/' $A
+            printf '\ndependencies {\n    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.1.4"\n}\n' >> $A
+          fi
+          grep -n "Desugaring\|desugar" $A
 
       - run: flutter pub get
 

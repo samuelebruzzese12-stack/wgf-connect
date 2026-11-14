@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app/app.dart';
 import 'core/config/env.dart';
+import 'core/services/background_alerts.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,4 +21,6 @@ Future<void> main() async {
   ));
   await Supabase.initialize(url: Env.supabaseUrl, anonKey: Env.supabaseAnonKey);
   runApp(const ProviderScope(child: WgfConnectApp()));
+  // notifiche ad app chiusa (controllo periodico in sottofondo)
+  setupBackgroundAlerts();
 }
