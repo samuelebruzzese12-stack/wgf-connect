@@ -21,6 +21,8 @@ class NotificationsScreen extends ConsumerWidget {
         'comment' => (Icons.mode_comment_rounded, 'Nuovo commento al tuo post'),
         'reply' => (Icons.reply_rounded, 'Hanno risposto al tuo commento'),
         'event' => (Icons.event_rounded, 'Novità su un evento'),
+        'community' when n.payload['type'] == 'invite' =>
+          (Icons.celebration_rounded, '🎉 @${n.payload['username']} si è unito con il tuo invito!'),
         'community' => (Icons.groups_rounded, 'Aggiornamento della community'),
         'creator' => (Icons.auto_awesome_rounded, 'Sentinel: ${n.payload['title'] ?? 'nuovo aggiornamento'}'),
         'friend_request' => (Icons.person_add_rounded, 'Nuova richiesta di amicizia'),

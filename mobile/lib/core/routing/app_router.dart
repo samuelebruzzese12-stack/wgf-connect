@@ -26,6 +26,7 @@ import '../../features/settings/settings_screen.dart';
 import '../../features/splash/splash_screen.dart';
 import '../../features/support/support_screen.dart';
 import '../../features/wgf/wgf_quiz_screen.dart';
+import '../../features/wgf/ambassador_screen.dart';
 import '../../features/wgf/wgf_zone_screen.dart';
 import '../../features/events/events_tab.dart';
 
@@ -104,6 +105,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/admin/announce', pageBuilder: (c, s) => _page(s, const SendAnnouncementScreen())),
       GoRoute(path: '/wgf', pageBuilder: (c, s) => _page(s, const WgfZoneScreen())),
       GoRoute(path: '/wgf/quiz', pageBuilder: (c, s) => _page(s, const WgfQuizScreen())),
+      GoRoute(path: '/invite', pageBuilder: (c, s) => _page(s, const AmbassadorScreen())),
       GoRoute(path: '/events', pageBuilder: (c, s) => _page(s, const EventsScreen())),
       GoRoute(path: '/sentinel', pageBuilder: (c, s) => _page(s, const SentinelScreen())),
       GoRoute(path: '/verify', pageBuilder: (c, s) => _page(s, const AgeVerificationScreen())),

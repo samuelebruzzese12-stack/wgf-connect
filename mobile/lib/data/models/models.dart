@@ -24,6 +24,7 @@ class ProfileCard {
     this.isFounder = false,
     this.favoriteSeries,
     this.fanSince,
+    this.ambassador = '',
   });
 
   final String id;
@@ -43,6 +44,7 @@ class ProfileCard {
   final bool isFounder;
   final String? favoriteSeries;
   final int? fanSince;
+  final String ambassador;
 
   String get name => (displayName?.isNotEmpty ?? false) ? displayName! : username;
 
@@ -64,6 +66,7 @@ class ProfileCard {
         isFounder: j['role'] == 'founder',
         favoriteSeries: j['wgf_favorite_series'] as String?,
         fanSince: j['wgf_fan_since'] == null ? null : _int(j['wgf_fan_since']),
+        ambassador: (j['ambassador'] ?? '') as String,
       );
 }
 

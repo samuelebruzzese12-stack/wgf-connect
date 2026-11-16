@@ -54,6 +54,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
             children: [
               tile(Icons.event_rounded, 'WGF EVENTS', 'Raduni, incontri ed eventi gaming', '/events'),
               tile(Icons.emoji_events_rounded, 'Quiz WGF', 'Quanto conosci i WGF?', '/wgf/quiz'),
+              tile(Icons.leaderboard_rounded, 'Invita & Classifica', 'Porta i tuoi amici fan e scala la classifica', '/invite'),
               tile(Icons.travel_explore_rounded, 'FanFinder', 'Cerca fan per città e interessi', '/fanfinder'),
               tile(Icons.groups_rounded, 'Gruppi', 'WGF, gaming, fan art e città', '/groups'),
               tile(Icons.favorite_rounded, 'Non sei solo', 'Ascolto e incoraggiamento', '/support'),

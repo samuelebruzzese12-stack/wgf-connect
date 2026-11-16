@@ -660,3 +660,47 @@ class AnnouncementsRepository {
 
   Future<void> end(String id) => _c.rpc('admin_end_announcement', params: {'p_id': id});
 }
+
+// ---------------------------------------------------------------------------
+// Inviti "Ambasciatore WGF" e classifica fan
+// ---------------------------------------------------------------------------
+class InviteInfo {
+  InviteInfo(this.raw);
+  final Map<String, dynamic> raw;
+  String get code => (raw['code'] ?? '') as String;
+  int get count => ((raw['count'] ?? 0) as num).toInt();
+  String get level => (raw['level'] ?? '') as String;
+  String? get invitedBy => raw['invited_by'] as String?;
+  bool get canRedeem => (raw['can_redeem'] ?? false) as bool;
+}
+
+class LeaderboardEntry {
+  LeaderboardEntry(this.raw);
+  final Map<String, dynamic> raw;
+  int get rank => ((raw['rank'] ?? 0) as num).toInt();
+  String get userId => raw['user_id'] as String;
+  String get username => raw['username'] as String;
+  String get name => ((raw['display_name'] as String?)?.isNotEmpty ?? false) ? raw['display_name'] as String : username;
+  String? get avatarPath => raw['avatar_path'] as String?;
+  int get score => ((raw['score'] ?? 0) as num).toInt();
+  String get badge => (raw['badge'] ?? '') as String;
+  bool get isMe => (raw['is_me'] ?? false) as bool;
+}
+
+final inviteInfoProvider = FutureProvider.autoDispose<InviteInfo>((ref) async {
+  ref.watch(currentUserIdProvider);
+  final r = await ref.watch(supabaseProvider).rpc('my_invite_info');
+  return InviteInfo(Map<String, dynamic>.from(r as Map));
+});
+
+final leaderboardProvider = FutureProvider.autoDispose.family<List<LeaderboardEntry>, String>((ref, kind) async {
+  ref.watch(currentUserIdProvider);
+  final r = await ref.watch(supabaseProvider).rpc('fan_leaderboard', params: {'p_kind': kind});
+  return [for (final e in r as List) LeaderboardEntry(Map<String, dynamic>.from(e as Map))];
+});
+
+Future<String> redeemInvite(WidgetRef ref, String code) async {
+  final r = await ref.read(supabaseProvider).rpc('redeem_invite', params: {'p_code': code});
+  ref.invalidate(inviteInfoProvider);
+  return r as String;
+}

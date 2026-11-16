@@ -1,9 +1,12 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../core/constants/wgf.dart';
 import '../../core/theme/app_theme.dart';
@@ -25,6 +28,31 @@ class _FanCardState extends ConsumerState<FanCard> with SingleTickerProviderStat
   late final AnimationController _shine =
       AnimationController(vsync: this, duration: const Duration(seconds: 3))..repeat();
   Offset _tilt = Offset.zero;
+  final _cardKey = GlobalKey();
+
+  /// Trasforma la tessera in un'immagine e apre la condivisione (WhatsApp, Instagram, TikTok...).
+  Future<void> _share(int? number) async {
+    final p = widget.profile;
+    final text = 'Sono il fan WGF nº ${number ?? '?'} su WGF CONNECT: @${p.username} 🦁\n'
+        'Scarica l\'app: https://github.com/samuelebruzzese12-stack/wgf-connect/releases/latest';
+    try {
+      final boundary = _cardKey.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+      final image = await boundary.toImage(pixelRatio: 3);
+      final data = await image.toByteData(format: ui.ImageByteFormat.png);
+      await SharePlus.instance.share(ShareParams(
+        text: text,
+        files: [XFile.fromData(data!.buffer.asUint8List(), mimeType: 'image/png', name: 'tessera-fan-wgf.png')],
+        fileNameOverrides: const ['tessera-fan-wgf.png'],
+      ));
+    } catch (_) {
+      await Clipboard.setData(ClipboardData(text: text));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Testo della tessera copiato: condividilo!')),
+        );
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -48,12 +76,7 @@ class _FanCardState extends ConsumerState<FanCard> with SingleTickerProviderStat
       onPanEnd: (_) => setState(() => _tilt = Offset.zero),
       onLongPress: () {
         HapticFeedback.mediumImpact();
-        Clipboard.setData(ClipboardData(
-          text: 'Sono il fan WGF nº ${number ?? '?'} su WGF CONNECT: @${p.username} 🦁',
-        ));
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Testo della tessera copiato: condividilo!')),
-        );
+        _share(number);
       },
       child: TweenAnimationBuilder<Offset>(
         tween: Tween(end: _tilt),
@@ -66,7 +89,9 @@ class _FanCardState extends ConsumerState<FanCard> with SingleTickerProviderStat
             ..rotateY(t.dx),
           child: child,
         ),
-        child: AspectRatio(
+        child: RepaintBoundary(
+          key: _cardKey,
+          child: AspectRatio(
           aspectRatio: 1.586, // proporzioni di una carta di credito
           child: ClipRRect(
             borderRadius: BorderRadius.circular(22),
@@ -154,6 +179,7 @@ class _FanCardState extends ConsumerState<FanCard> with SingleTickerProviderStat
               ],
             ),
           ),
+        ),
         ),
       ),
     );

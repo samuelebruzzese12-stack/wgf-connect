@@ -189,11 +189,12 @@ class ProfileDetails extends ConsumerWidget {
           ),
         ),
         Center(child: Text('@${p.username} · ${p.city}', style: const TextStyle(color: WgfColors.muted))),
-        if (p.isFounder || p.wgfQuizScore > 0) ...[
+        if (p.isFounder || p.wgfQuizScore > 0 || p.ambassador.isNotEmpty) ...[
           const SizedBox(height: 8),
           Wrap(alignment: WrapAlignment.center, spacing: 6, children: [
             if (p.isFounder) const TagChip('Fondatore', icon: Icons.auto_awesome_rounded),
             if (p.wgfQuizScore > 0) TagChip(quizBadge(p.wgfQuizScore), icon: Icons.emoji_events_rounded),
+            if (p.ambassador.isNotEmpty) TagChip(p.ambassador, icon: Icons.campaign_rounded),
           ]),
         ],
         if (p.bio != null && p.bio!.isNotEmpty) ...[
